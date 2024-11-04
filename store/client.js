@@ -399,7 +399,7 @@ export const actions = {
               answered: false,
               city: payload.city.id,
               service: payload.service.id,
-              tickettype: 13,
+              tickettype: 5,
               assignated: 1,
               clienttype: payload.clienttype.id,
               company: payload.company.id,
