@@ -485,8 +485,7 @@ export default {
         const newCode = parseInt(lastService.code) + 1
         this.Client.code = newCode
       } catch (error) {
-        console.log('Error al generar el código:', error)
-        throw error
+        this.Client.code = 1
       }
     },
 

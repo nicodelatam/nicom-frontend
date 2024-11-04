@@ -90,12 +90,12 @@ import Cookie from 'js-cookie'
 
 export default {
   data: () => ({
-    username: 'sistema',
+    username: '',
     usernameRules: [
       v => !!v || 'Usuario requerido',
       v => (v && v.length <= 32) || 'El nombre debe ser de menos de 32 caracteres de longitud.'
     ],
-    password: 'Soy@Nikoxx99',
+    password: '',
     passwordRules: [
       v => !!v || 'Debes ingresar una contraseña',
       v => (v && v.length >= 8) || 'La contraseña debe ser de almenos 8 caracteres.'
@@ -206,7 +206,6 @@ export default {
               role: userData.role,
               telegramchatid: userData.telegramchatid
             }
-            console.log(auth)
             const authCookie = {
               token: response.jwt,
               preferredcity: { name: userCompanies[0].cities[0].name },
@@ -216,7 +215,6 @@ export default {
             Cookie.set('auth', authCookie, { expires: 7, path: '/' })
             localStorage.setItem('auth', JSON.stringify(auth))
             const redirectPath = `/client?city=${auth && auth.preferredcity ? auth.preferredcity.name : userCompanies[0].cities[0].name}&clienttype=${userData && auth.preferredclienttype ? auth.preferredclienttype.name : 'INTERNET'}&view=TODOS`
-            console.log(redirectPath)
             window.location.href = redirectPath
             this.isLoading = false
           }

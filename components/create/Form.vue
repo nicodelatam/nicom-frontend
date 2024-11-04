@@ -126,7 +126,7 @@ export default {
       ],
       codeError: false,
       hideD00pHint: false,
-      d00pHint: 'jiji',
+      d00pHint: '',
       codeSuccess: null
     }
   },
@@ -156,16 +156,17 @@ export default {
         })
           .then(res => res.json())
           .then(({ data: client }) => {
-            console.log(client)
             if (client.length > 0) {
               this.valid = false
               this.d00pHint = 'Ya existe un cliente con esta cedula.'
               this.codeError = true
               this.hideD00pHint = false
+              reject(Error('Ya existe un cliente con esta cedula.'))
             } else {
               this.valid = true
               this.codeError = false
               this.hideD00pHint = true
+              resolve(false)
             }
           }).catch((error) => {
             // eslint-disable-next-line no-console

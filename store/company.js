@@ -6,7 +6,6 @@ export const state = () => ({
 export const mutations = {
   setCurrentCompany (state, company) {
     try {
-      console.log(company)
       state.currentCompany = company
       state.cities = company.cities
       state.clienttypes = company.clienttypes
