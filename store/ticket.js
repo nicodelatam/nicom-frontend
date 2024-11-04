@@ -183,6 +183,9 @@ export const actions = {
       filters: {
         clienttypes: {
           name: payload.clienttype
+        },
+        company: {
+          name: payload.company
         }
       },
       pagination: {

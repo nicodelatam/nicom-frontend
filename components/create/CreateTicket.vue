@@ -627,6 +627,8 @@ export default {
       }
       this.ticketPayload.service = this.service.id
       this.ticketPayload.city = this.service.city.id
+      this.ticketPayload.company = this.service.company.id
+      this.ticketPayload.clienttype = this.clienttype.id
     },
     testClientAvailable () {
       if (this.isEmpty(this.ticketPayload.type)) {
@@ -717,7 +719,8 @@ export default {
         on: this.ticketPayload.on,
         city: this.ticketPayload.city,
         tickettype: this.ticketPayload.type.id,
-        clienttype: 1,
+        clienttype: this.ticketPayload.clienttype,
+        company: this.ticketPayload.company,
         assignated: this.$store.state.auth.id,
         details: this.ticketPayload.details
       }

@@ -624,7 +624,7 @@ export default {
     async getClientFromSearchParam () {
       const qs = require('qs')
       const query = qs.stringify({
-        populate: ['services', 'services.normalized_client', 'services.city', 'services.plan', 'services.service_addresses', 'services.service_addresses.neighborhood', 'services.technology', 'services.clienttype', 'services.offer', 'services.offer.plan', 'services.offermovements.offer', 'services.offermovements', 'services.debtmovements', 'services.debtmovements.technician', 'services.monthlybills', 'services.tvspec', 'services.tvspec.tvspectype']
+        populate: ['services', 'services.normalized_client', 'services.city', 'services.company', 'services.plan', 'services.service_addresses', 'services.service_addresses.neighborhood', 'services.technology', 'services.clienttype', 'services.offer', 'services.offer.plan', 'services.offermovements.offer', 'services.offermovements', 'services.debtmovements', 'services.debtmovements.technician', 'services.monthlybills', 'services.tvspec', 'services.tvspec.tvspectype']
       },
       {
         encodeValuesOnly: true
