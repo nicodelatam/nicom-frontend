@@ -41,7 +41,7 @@ export default {
   middleware: 'notAuthenticated',
   head () {
     return {
-      title: 'GTELTELECOMUNICACIONES',
+      title: 'Nicom',
       meta: [
         { hid: 'language', name: 'language', content: 'es' },
         { hid: 'audience', name: 'audience', content: 'all' },
@@ -57,7 +57,7 @@ export default {
         { hid: 'googlebot-image', name: 'googlebot-image', content: 'all' },
         { hid: 'title', name: 'title', content: this.title },
         { hid: 'og:title', property: 'og:title', content: this.title },
-        { hid: 'og:description', property: 'og:description', content: 'GTELTELECOMUNICACIONES Integrado' },
+        { hid: 'og:description', property: 'og:description', content: 'Nicom Integrado' },
         { hid: 'author', name: 'author', content: 'Esmeralda Rojas' }
       ]
     }

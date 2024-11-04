@@ -211,7 +211,7 @@
               4. No está autorizado para mover o reubicar su instalación de televisión.
             </p>
             <p>
-              5. Puede consultar nuestra política de datos en la página www.gteltelecomunicaciones.com
+              5. Puede consultar nuestra política de datos en la página www.Nicom.com
             </p>
             <p>
               6. Abstengase de realizar algún pago al técnico de soporte, debe de acercarse únicamente a nuestra oficina.

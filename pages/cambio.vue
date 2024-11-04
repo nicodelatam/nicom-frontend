@@ -58,7 +58,7 @@
                     Continuar
                   </v-btn>
 
-                  <v-btn href="https://gteltelecomunicaciones.com">
+                  <v-btn href="https://Nicom.com">
                     Cancelar
                   </v-btn>
                 </v-stepper-content>
@@ -184,7 +184,7 @@
         xs="12"
       >
         <v-card>
-          <v-card-title>GTELTELECOMUNICACIONES</v-card-title>
+          <v-card-title>Nicom</v-card-title>
           <v-card-text>
             <v-alert
               border="left"
@@ -199,7 +199,7 @@
             <v-btn
               color="success"
               text
-              href="https://gteltelecomunicaciones.com"
+              href="https://Nicom.com"
             >
               Terminar y Volver
             </v-btn>

@@ -8,7 +8,7 @@
 export default {
   head () {
     return {
-      title: 'Tickets GTELTELECOMUNICACIONES integrado'
+      title: 'Tickets Nicom integrado'
     }
   }
 }

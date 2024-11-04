@@ -74,7 +74,7 @@
                 <v-btn
                   class="mr-2"
                   color="primary"
-                  :href="`https://admin.gteltelecomunicaciones.com/${item.path}`"
+                  :href="`https://admin.Nicom.com/${item.path}`"
                   target="_blank"
                   small
                 >

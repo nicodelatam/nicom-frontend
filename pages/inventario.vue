@@ -47,7 +47,7 @@ export default {
   },
   head () {
     return {
-      title: 'Inventario GTELTELECOMUNICACIONES integrado'
+      title: 'Inventario Nicom integrado'
     }
   }
 }

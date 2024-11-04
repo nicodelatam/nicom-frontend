@@ -100,7 +100,7 @@ export default {
                     {
                       wa_id: '1',
                       profile: {
-                        name: 'GTELTELECOMUNICACIONES'
+                        name: 'Nicom'
                       }
                     }
                   ],

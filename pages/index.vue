@@ -1,5 +1,5 @@
 <template>
-  <h1>GTELTELECOMUNICACIONES</h1>
+  <h1>Nicom</h1>
 </template>
 
 <script>

@@ -28,7 +28,7 @@
           Información Postventa
         </v-card-title>
         <v-card-text>
-          ¡Te damos la bienvenida a GTELTELECOMUNICACIONES!<br>
+          ¡Te damos la bienvenida a Nicom!<br>
           Ahora cuentas con un servicio de {{ client.plan ? client.plan.name : client.offer.plan.name }} para que puedas navegar de forma ilimitada.
           <br><br>
           Recuerda que puedes comunicarte al 3153477652 por llamada o Whatsapp donde podrás agendar servicio técnico, despejar dudas o realizar peticiones los 7 días de la semana en horario de oficina. Si, ¡Incluso los domingos o festivos!.

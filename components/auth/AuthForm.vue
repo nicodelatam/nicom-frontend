@@ -12,7 +12,7 @@
         class="blue darken-4"
         tile
       >
-        GTELTELECOMUNICACIONES Integrado
+        Nicom Integrado
       </p>
       <p
         v-if="loginFailed"
@@ -43,7 +43,7 @@
       >
         <!-- <img
           src="logo.png"
-          alt="GTELTELECOMUNICACIONES Logo"
+          alt="Nicom Logo"
           style="max-width:50%;"
         > -->
       </v-card-text>

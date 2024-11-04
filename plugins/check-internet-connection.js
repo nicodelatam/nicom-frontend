@@ -3,7 +3,7 @@ export default (_, inject) => {
 }
 async function checkInternetConnection () {
   try {
-    const response = await fetch('https://admin.gteltelecomunicaciones.com/_health', {
+    const response = await fetch('https://admin.Nicom.com/_health', {
       method: 'HEAD',
       headers: {
         'Content-Type': 'application/json'

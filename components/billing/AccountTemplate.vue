@@ -6,7 +6,7 @@
           <MainLogoDark />
         </div>
         <div style="width:100%;text-align:center;text-align:center;">
-          <h5>GTEL TELECOMUNICACIONES NIT 901192568-2</h5>
+          <h5>Nicom TELECOMUNICACIONES NIT 901192568-2</h5>
           <h5>CARRERA 7 # 7 - 76 CENTRO, GUAYABAL</h5>
         </div>
         <div style="text-align:center;">
@@ -71,7 +71,7 @@
     <v-container class="parent-company">
       <div>
         <div class="sub-parent-company" style="border-radius:10px 10px 0px 0px;">
-          GTELTELECOMUNICACIONES
+          Nicom
         </div>
         <div class="sub-parent-company" style="border-radius:0px 0px 10px 10px;">
           <h4>Direccion: CRA 4 # 8 - 11</h4>
@@ -114,10 +114,10 @@
       </div>
       <div>
         <div class="sub-parent-company" style="border-radius:10px 10px 0px 0px;">
-          GTELTELECOMUNICACIONES
+          Nicom
         </div>
         <div class="sub-parent-company" style="border-radius:0px 0px 10px 10px;">
-          <h4>Pagina web: www.gteltelecomunicaciones.com</h4>
+          <h4>Pagina web: www.Nicom.com</h4>
           <h4>Ciudad: Mariquita, Tolima 732020</h4>
           <h4>WhatsApp: 3153477652</h4>
           <h4>Horarios Lun - Vie: 8:00 a.m. - 12:00 m, 2:00 p.m. - 6:00 p.m.</h4>

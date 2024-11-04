@@ -14,7 +14,7 @@ export default {
   */
   head: {
     titleTemplate: '%s',
-    title: 'GTELTELECOMUNICACIONES Integrado',
+    title: 'Nicom Integrado',
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -67,15 +67,15 @@ export default {
   ],
   pwa: {
     meta: {
-      name: 'GTELTELECOMUNICACIONES Integrado',
+      name: 'Nicom Integrado',
       viewport: 'width=device-width, initial-scale=1',
       author: 'Esmeralda Rojas',
-      description: 'GTELTELECOMUNICACIONES Integrado'
+      description: 'Nicom Integrado'
     },
     manifest: {
-      name: 'GTELTELECOMUNICACIONES Integrado',
+      name: 'Nicom Integrado',
       lang: 'es',
-      short_name: 'GTELTELECOMUNICACIONES',
+      short_name: 'Nicom',
       start_url: '/tickets',
       display: 'standalone'
     },

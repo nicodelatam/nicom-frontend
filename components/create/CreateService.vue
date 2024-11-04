@@ -698,7 +698,7 @@ export default {
       const nombreLowerCase = name[0].toLowerCase()
       const processedName = nombreLowerCase.charAt(0).toUpperCase() + nombreLowerCase.slice(1)
       this.Client.wifi_password = processedName + this.Client.code
-      this.Client.wifi_ssid = `GTELTELECOMUNICACIONES_${lastNameLowerCase.charAt(0).toUpperCase() + lastNameLowerCase.slice(1)}`
+      this.Client.wifi_ssid = `Nicom_${lastNameLowerCase.charAt(0).toUpperCase() + lastNameLowerCase.slice(1)}`
     },
     formatCurrency (value) {
       return Number(value).toLocaleString('es')

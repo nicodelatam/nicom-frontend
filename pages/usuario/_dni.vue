@@ -70,7 +70,7 @@
     <v-row class="justify-center">
       <v-card-text class="text-center">
         <p class="grey--text">
-          &copy; GTELTELECOMUNICACIONES integrado
+          &copy; Nicom integrado
         </p>
       </v-card-text>
       <div style="width:150px;">

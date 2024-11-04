@@ -73,7 +73,7 @@ export default {
       this.parts = []
       for (let i = 0; i < this.city.mikrotiks.length; i++) { // CAMBIA EL FOR ADENTRO DEL SETINTERNAL
         setInterval(async () => {
-          const res = await fetch(`https://log.gteltelecomunicaciones.com/${this.city.mikrotiks[i].ip}-pppoe,ppp,info.log`)
+          const res = await fetch(`https://log.Nicom.com/${this.city.mikrotiks[i].ip}-pppoe,ppp,info.log`)
           const text = await res.text()
           const parts = text.split('\n')
           const uwu = parts.map((part, index) => {
@@ -96,7 +96,7 @@ export default {
     getLogsOlt () {
       for (let i = 0; i < this.city.mikrotiks.length; i++) {
         setInterval(async () => {
-          const res = await fetch(`https://log.gteltelecomunicaciones.com/${this.city.mikrotiks[i].ip}-auditd.log`)
+          const res = await fetch(`https://log.Nicom.com/${this.city.mikrotiks[i].ip}-auditd.log`)
           const text = await res.text()
           const parts = text.split('\n')
           const data = parts.map((part, index) => {

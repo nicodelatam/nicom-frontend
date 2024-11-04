@@ -4,7 +4,7 @@
       <v-card style="border-radius:20px 0px 0px 20px;height:100%;max-height:100%;" class="elevation-0">
         <v-card-title>
           <v-icon>mdi-account</v-icon>
-          <span class="text-h6 ml-1">GTELTELECOMUNICACIONES</span>
+          <span class="text-h6 ml-1">Nicom</span>
         </v-card-title>
         <v-card-text class="pr-1">
           <ChatdeskUser />
@@ -25,7 +25,7 @@ export default {
   name: 'Chatdesk',
   head () {
     return {
-      title: this.$route.query.phone ? `Chat de ${this.$route.query.phone}` : 'GTELTELECOMUNICACIONES'
+      title: this.$route.query.phone ? `Chat de ${this.$route.query.phone}` : 'Nicom'
     }
   }
 }
