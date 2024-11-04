@@ -167,7 +167,7 @@ export default {
     openPrintReceipt (receipt) {
       localStorage.removeItem('receiptToPrint')
       localStorage.setItem('receiptToPrint', JSON.stringify(receipt))
-      window.open(`/bill?id=${receipt.id}`)
+      window.open(`/bill?id=${receipt.id}&city=${this.$route.query.city}&clienttype=${this.$route.query.clienttype}&company=${this.$route.query.company}`, '_blank')
     }
   }
 }

@@ -1,14 +1,17 @@
 <template>
-  <v-card v-if="invoice" class="elevation-0 inner p-0" style="border:1px solid black;" light>
+  <v-card v-if="invoice && company" class="elevation-0 inner p-0" style="border:1px solid black;" light>
     <v-container class="parent p-0">
       <div class="client-parent">
         <div style="width:200px;margin:auto;">
-          <MainLogoDark />
+          <v-img
+            :src="this.$config.CDN_STRAPI_ENDPOINT + company.logo.url"
+            cover
+          />
         </div>
         <div style="width:100%;text-align:center;text-align:center;">
-          <h5>TV POR CABLE</h5>
-          <h5></h5>
-          <h5></h5>
+          <h5>{{ company.short_name }}</h5>
+          <h5>{{ company.nit }}</h5>
+          <h5>{{ company.address }}</h5>
         </div>
       </div>
       <div class="sub-parent">
@@ -120,6 +123,7 @@
     <v-container class="parent-info pa-0">
       <div style="font-weight:bold;grid-column: span 4" class="text-center" />
       <div style="font-weight:bold;grid-column: span 4" class="text-center">
+        LINEA DE ATENCIÓN: {{ company.phone }}
       </div>
       <div style="grid-column: span 4; grid-offset: 4;" />
       <div style="font-weight:bold;grid-column: span 4; grid-offset: 4;" class="text-center">
@@ -127,6 +131,7 @@
       </div>
       <div style="grid-column: span 4; grid-offset: 4;" class="text-center" />
       <div style="font-weight:bold;grid-column: span 4; grid-offset: 4;" class="text-center">
+        {{ company.email }}
       </div>
     </v-container>
   </v-card>
@@ -135,6 +140,10 @@
 export default {
   props: {
     invoice: {
+      type: Object,
+      default: () => {}
+    },
+    company: {
       type: Object,
       default: () => {}
     }

@@ -23,6 +23,16 @@
       <v-col>
         <v-btn
           class="rounded-xl"
+          color="primary"
+          block
+          :loading="loading"
+          :disabled="loading || activeServices.length < 1 || !end"
+          @click="exit"
+        >
+          Finalizar
+        </v-btn>
+        <!-- <v-btn
+          class="rounded-xl"
           color="red"
           block
           :loading="loading"
@@ -30,7 +40,7 @@
           @click="sendNotifications"
         >
           Enviar Notificaciones por WhatsApp
-        </v-btn>
+        </v-btn> -->
       </v-col>
     </v-row>
     <v-row>
@@ -212,6 +222,9 @@ export default {
     },
     backToE1 () {
       this.$store.commit('billing/e1', { e1: 1 })
+    },
+    exit () {
+      window.location.href = '/client'
     }
   }
 }

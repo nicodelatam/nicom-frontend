@@ -1,6 +1,6 @@
 <template>
   <v-container fluid>
-    <BillingBillTemplate :bill="bill" />
+    <BillingBillTemplate :bill="bill" :company="company" />
     <v-btn text class="black--text mt-10" @click="printPrompt">
       <v-icon>mdi-printer</v-icon> Imprimir
     </v-btn>
@@ -12,13 +12,18 @@ export default {
   layout: 'print',
   data () {
     return {
-      bill: null
+      bill: null,
+      company: null
     }
   },
   async mounted () {
     this.bill = await this.$store.dispatch('billing/getBillById', {
       token: this.$store.state.auth.token,
       id: this.$route.query.id
+    })
+    this.company = await this.$store.dispatch('company/getCompanyByName', {
+      company: this.$route.query.company,
+      token: this.$store.state.auth.token
     })
     // setTimeout(() => {
     //   this.printoToPdf() // Uncomment this line to print the bill automatically

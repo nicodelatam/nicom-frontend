@@ -1,18 +1,24 @@
 <template>
   <v-container fluid>
-    <BillingInvoiceTemplate :invoice="invoice" />
+    <BillingInvoiceTemplate :invoice="invoice" :company="company" />
   </v-container>
 </template>
 <script>
 export default {
   name: 'Invoice',
   layout: 'print',
+  middleware: 'defaultCity',
   data () {
     return {
-      invoice: null
+      invoice: null,
+      company: null
     }
   },
   async mounted () {
+    this.company = await this.$store.dispatch('company/getCompanyByName', {
+      company: this.$route.query.company,
+      token: this.$store.state.auth.token
+    })
     this.invoice = await this.$store.dispatch('billing/getInvoiceById', {
       token: this.$store.state.auth.token,
       id: this.$route.query.id

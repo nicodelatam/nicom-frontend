@@ -1,6 +1,6 @@
 <template>
   <v-container fluid>
-    <BillingInvoicesTemplate :invoices="invoices" :service="service" />
+    <BillingInvoicesTemplate :invoices="invoices" :service="service" :company="company" />
   </v-container>
 </template>
 <script>
@@ -10,7 +10,8 @@ export default {
   data () {
     return {
       invoices: [],
-      service: null
+      service: null,
+      company: null
     }
   },
   async mounted () {
@@ -18,6 +19,10 @@ export default {
       token: this.$store.state.auth.token,
       serviceId: this.$route.query.service,
       payed: false
+    })
+    this.company = await this.$store.dispatch('company/getCompanyByName', {
+      company: this.$route.query.company,
+      token: this.$store.state.auth.token
     })
     this.service = await this.$store.dispatch('billing/getServiceById', {
       token: this.$store.state.auth.token,

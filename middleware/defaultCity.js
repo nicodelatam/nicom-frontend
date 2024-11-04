@@ -25,8 +25,7 @@ export default function ({ route, redirect, store }) {
     clienttype: query.clienttype ? query.clienttype : (userPreferredClienttype || 'INTERNET'),
     service: query.service
   }
-
   if (!query.company || !query.clienttype || !query.city) {
-    redirect({ path, query: newQuery })
+    redirect({ path, query: { ...newQuery } })
   }
 }
