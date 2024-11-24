@@ -340,6 +340,19 @@
                   </div>
                 </v-card-text>
               </div>
+              <v-card-text>
+                <v-autocomplete
+                  v-model="technician"
+                  :items="technicians"
+                  item-text="username"
+                  item-value="id"
+                  label="Asignar a"
+                  auto-select-first
+                  outlined
+                  return-object
+                  hide-details="auto"
+                />
+              </v-card-text>
               <v-card-text class="d-flex">
                 <v-btn
                   color="blue darken-4"
@@ -523,7 +536,8 @@ export default {
         return pattern.test(value) || 'La contraseña no puede contener caracteres especiales.'
       }
     ],
-    hideHint: true
+    hideHint: true,
+    technician: null
   }),
   computed: {
     currentCity () {
@@ -549,11 +563,15 @@ export default {
     },
     numbersPad () {
       return Array.from({ length: 1200 }, (_, i) => (i + 1).toString().padStart(2, '0'))
+    },
+    technicians () {
+      return this.$store.state.operator.operators
     }
   },
   mounted () {
     this.$store.dispatch('telegram/getTelegramBotsFromDatabase', { token: this.$store.state.auth.token })
     this.$store.dispatch('neighborhood/getNeighborhoodsFromDatabase')
+    this.$store.dispatch('operator/getOperatorList', { token: this.$store.state.auth.token })
   },
   methods: {
     currentMonth () {
@@ -657,6 +675,14 @@ export default {
       }
       this.clientAvailableDialog = true
     },
+    saveAssignatedTechnician (ticketid) {
+      this.$store.dispatch('ticket/saveAssignated', {
+        ticketid,
+        technicianid: this.technician,
+        token: this.$store.state.auth.token
+      })
+      this.technician = null
+    },
     async createTicket () {
       this.loading = true
       if (this.phoneUpdate) {
@@ -733,7 +759,7 @@ export default {
         body: JSON.stringify({
           data: payload
         })
-      }).then((input) => {
+      }).then(async (input) => {
         if (input.status === 200) {
           if (this.ticketPayload.type.name === 'TRASLADO') {
             this.$store.dispatch('address/addAddress', {
@@ -750,16 +776,13 @@ export default {
             })
             this.createInvoiceMovement(this.service.id, this.ticketPayload.type.invoice_type.price, 'TRASLADO', this.ticketPayload.type.invoice_type.id)
           }
+          const ticket = await input.json()
+          if (this.technician) {
+            this.saveAssignatedTechnician(ticket.data.id)
+          }
           this.modal = false
           this.loading = false
           this.$store.commit('client/refresh')
-          if (this.service.name === 'INTERNET') {
-            // this.$simpleTelegramCreateTicket({ client: this.client, service: this.service, tickettype: this.ticketPayload.type.name, details: this.ticketPayload.details, neighborhood: this.client.neighborhood, operator: this.$store.state.auth.username, telegramBots: this.telegramBots })
-            // this.$pushSend({ title: 'TICKET INTERNET', message: `Ticket ${this.ticketPayload.type.name} creado para ${this.client.name}` })
-          } else {
-            // this.$simpleTelegramCreateTicketTV({ client: this.client, service: this.service, tickettype: this.ticketPayload.type.name, details: this.ticketPayload.details, neighborhood: this.client.neighborhood, operator: this.$store.state.auth.username, telegramBots: this.telegramBots })
-            // this.$pushSend({ title: 'TICKET TELEVISION', message: `Ticket ${this.ticketPayload.type.name} creado para ${this.client.name}` })
-          }
         } else {
           this.alertBox = true
           this.alertBoxColor = 'red darken-4'
