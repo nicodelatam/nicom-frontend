@@ -91,7 +91,7 @@ export const mutations = {
       throw new Error(`BILLING CLIENTS MUTATE ${error}`)
     }
   },
-  addMovement (state, movement) {
+  createInvoice (state, movement) {
     state.billingInfo.movements.push({
       id: state.billingInfo.movements.length + 1,
       amount: movement.amount,
@@ -154,7 +154,7 @@ export const mutations = {
   }
 }
 export const actions = {
-  addMovement ({ commit }, payload) {
+  createInvoice ({ commit }, payload) {
     try {
       return new Promise((resolve, reject) => {
         fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices`, {
@@ -166,7 +166,7 @@ export const actions = {
           body: JSON.stringify({
             data: {
               balance: payload.balance,
-              value: payload.balance,
+              value: payload.value,
               month: payload.month,
               year: payload.year,
               type: payload.type,
@@ -189,6 +189,59 @@ export const actions = {
       })
     } catch (error) {
       throw new Error(`UPDATE BILLING INFO BY CLIENT ID ACTION ${error}`)
+    }
+  },
+  getBalancesInFavor (_, payload) {
+    try {
+      return new Promise((resolve, reject) => {
+        const qs = require('qs')
+        const query = qs.stringify({
+          filters: {
+            service: payload.serviceId,
+            concept: 'ADELANTO'
+          }
+        },
+        {
+          encodeValuesOnly: true
+        })
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices?${query}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${payload.token}`
+          }
+        })
+          .then(res => res.json())
+          .then(({ data: balancesInFavor }) => {
+            resolve(balancesInFavor)
+          })
+      })
+    } catch (error) {
+      throw new Error(`GET BALANCE IN FAVOR ACTION ${error}`)
+    }
+  },
+  setNewBalanceInFavor (_, payload) {
+    try {
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}credit-balances/${payload.balanceInFavorId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${payload.token}`
+          },
+          body: JSON.stringify({
+            data: {
+              amount: payload.newBalance
+            }
+          })
+        })
+          .then(res => res.json())
+          .then(({ data: service }) => {
+            resolve(service)
+          })
+      })
+    } catch (error) {
+      throw new Error(`SET BALANCE IN FAVOR ACTION ${error}`)
     }
   },
   getInvoiceTypes ({ commit }, payload) {
@@ -763,6 +816,35 @@ export const actions = {
     }
   },
   getListOfActiveServices ({ commit }, payload) {
+    let nfilter = []
+    const currentYear = new Date().getFullYear()
+    if (payload.year > currentYear) {
+      nfilter = [
+        {
+          billingyear: {
+            $lte: payload.year
+          }
+        },
+        {
+          billingmonth: {
+            $gte: payload.month
+          }
+        }
+      ]
+    } else {
+      nfilter = [
+        {
+          billingyear: {
+            $lte: payload.year
+          }
+        },
+        {
+          billingmonth: {
+            $ne: payload.month
+          }
+        }
+      ]
+    }
     const qs = require('qs')
     const query = qs.stringify({
       filters: {
@@ -774,23 +856,9 @@ export const actions = {
         clienttype: {
           name: payload.clienttype
         },
-        company: {
-          name: payload.company
-        },
         $or: [
           {
-            $and: [
-              {
-                billingyear: {
-                  $lte: payload.year
-                }
-              },
-              {
-                billingmonth: {
-                  $lt: payload.month
-                }
-              }
-            ]
+            $and: nfilter
           },
           {
             $or: [
@@ -811,7 +879,7 @@ export const actions = {
       pagination: {
         pageSize: 5000
       },
-      populate: ['offer', 'plan', 'service_addresses', 'normalized_client', 'invoices']
+      populate: ['offer', 'plan', 'service_addresses', 'normalized_client', 'invoices', 'city']
     },
     {
       encodeValuesOnly: true

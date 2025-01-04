@@ -726,7 +726,7 @@ export default {
       return monthNames[this.currentMonth - 1]
     },
     async createInvoiceMovement (serviceId, balance = 0, concept = 'AFILIACION') {
-      await this.$store.dispatch('billing/addMovement', {
+      await this.$store.dispatch('billing/createInvoice', {
         balance: balance || this.Client.offer.affiliation_price,
         value: balance || this.Client.offer.affiliation_price,
         month: this.currentMonth,

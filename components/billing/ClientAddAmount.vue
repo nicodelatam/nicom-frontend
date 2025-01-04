@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     v-model="dialog"
-    width="1200"
+    width="90vw"
   >
     <template v-slot:activator="{ on: onDialog, attrs: attrDialog }">
       <v-tooltip top>
@@ -12,7 +12,7 @@
             v-bind="{...attrs, ...attrDialog}"
             v-on="{ ...on, ...onDialog }"
           >
-            <v-icon>mdi-file-document-plus-outline</v-icon>
+            <v-icon>mdi-currency-usd</v-icon>
           </v-btn>
         </template>
         <span>Generar Cobro</span>
@@ -20,7 +20,7 @@
     </template>
     <v-card :loading="loading" class="mt-2 rounded-lg">
       <v-card-title class="d-flex justify-center">
-        Generar Cobro por Conceptos
+        Agregar saldo por concepto
       </v-card-title>
       <v-card-text>
         <v-form v-model="valid" action="" class="d-lg-flex mt-2 mt-lg-0">
@@ -31,6 +31,7 @@
             color="primary"
             class="mr-0 mr-lg-2 mt-2 mt-lg-0"
             rounded
+            x-large
             @click="addAmount"
           >
             <v-icon>mdi-send</v-icon>
@@ -38,12 +39,10 @@
           <v-text-field
             v-model.number="amount"
             type="number"
-            label="Generar Cobro $0.00"
+            label="Valor"
             :rules="canNotBeNullNorContainCommasOrDots"
             :disabled="loading"
-            single-line
-            dense
-            filled
+            outlined
             rounded
             class="mr-0 mr-lg-2 mt-2 mt-lg-0"
             hide-details="auto"
@@ -61,10 +60,8 @@
             label="Tipo de cobro"
             class="mr-0 mr-lg-2 mt-2 mt-lg-0"
             return-object
-            single-line
             hide-details
-            filled
-            dense
+            outlined
             rounded
             autofocus
             @keyup.enter="addAmount"
@@ -76,10 +73,8 @@
             class="mr-0 mr-lg-2 mt-2 mt-lg-0"
             :disabled="loading"
             max="12"
-            single-line
             hide-details="auto"
-            filled
-            dense
+            outlined
             rounded
             @keyup.enter="addAmount"
           />
@@ -89,10 +84,8 @@
             label="Año"
             class="mr-0 mr-lg-2 mt-2 mt-lg-0"
             :disabled="loading"
-            single-line
             hide-details="auto"
-            filled
-            dense
+            outlined
             rounded
             @keyup.enter="addAmount"
           />
@@ -101,10 +94,8 @@
             label="Observaciones (OPCIONAL)"
             class="mr-0 mr-lg-2 mt-2 mt-lg-0 d-lg-flex"
             :disabled="loading"
-            single-line
             hide-details
             filled
-            dense
             rounded
             color="blue"
             @keyup.enter="addAmount"
@@ -153,7 +144,7 @@ export default {
     async addAmount () {
       if (this.valid) {
         this.loading = true
-        await this.$store.dispatch('billing/addMovement', {
+        await this.$store.dispatch('billing/createInvoice', {
           balance: this.amount,
           value: this.amount,
           month: this.month,
@@ -175,8 +166,8 @@ export default {
           token: this.$store.state.auth.token,
           biller: this.$store.state.auth,
           service: this.service.id,
-          debit: this.amount,
-          credit: 0,
+          debit: this.billtype.name === 'ADELANTO' ? 0 : this.amount,
+          credit: this.billtype.name === 'ADELANTO' ? this.amount : 0,
           concept: this.billtype.name
         }
         await this.$store.dispatch('billing/createLegalNote', legalNote)
@@ -192,6 +183,7 @@ export default {
         this.amount = null
         this.details = null
         this.$store.commit('billing/refresh')
+        this.dialog = false
       } else {
         this.$toast.error('No se puede crear la factura. Verifique los datos.', { duration: 5000 })
         this.amount = null

@@ -24,7 +24,7 @@ export default {
   },
   computed: {
     totalamount () {
-      return this.$store.state.billing.invoices?.reduce((total, item) => {
+      return this.$store.state.billing.invoices?.filter(i => i.concept !== 'ADELANTO').reduce((total, item) => {
         if (item.payed) {
           return total
         } else {

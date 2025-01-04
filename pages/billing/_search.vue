@@ -26,7 +26,7 @@
           <v-card-title class="text-caption">
             <nuxt-link
               :to="`/client/${currentService.normalized_client.id}?service=${currentService.id}&city=${$route.query.city}&clienttype=${$route.query.clienttype}`"
-              class="hideMe rounded-xl text-body-1 white--text text-weight-bold"
+              class="hideMe rounded-xl text-body-1 grey--text lighten-2 text-weight-bold"
             >
               {{ currentService.code }} / {{ currentService.normalized_client.name }} / {{ processAddresses(currentService) }} / {{ processAddressesNeighborhood(currentService) }}
             </nuxt-link>
@@ -44,20 +44,6 @@
                 {{ currentService.city.name }}
               </v-btn>
               <MainClientControl :service="currentService" :index="-1" class="mr-2" />
-              <v-tooltip top>
-                <template v-slot:activator="{ on, attrs }">
-                  <v-btn
-                    v-bind="attrs"
-                    icon
-                    :color="$vuetify.theme.dark ? 'white black--text' : 'primary'"
-                    :to="`/billing/resume?city=${$route.query.city}&clienttype=${$route.query.clienttype}`"
-                    v-on="on"
-                  >
-                    <v-icon>mdi-text-box-check-outline</v-icon>
-                  </v-btn>
-                </template>
-                <span>Movimientos Generales</span>
-              </v-tooltip>
               <CreateTicket :service="currentService" :filled="true" />
               <BillingPrintMovement :service="currentService" />
               <BillingClientAddAmount :service="currentService" />

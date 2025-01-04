@@ -581,7 +581,7 @@ export default {
       return Date.now().getFullYear()
     },
     async createInvoiceMovement (serviceId, balance = 0, concept = 'AFILIACION', invoice_type = 1) {
-      await this.$store.dispatch('billing/addMovement', {
+      await this.$store.dispatch('billing/createInvoice', {
         balance,
         value: balance,
         month: this.currentMonth,

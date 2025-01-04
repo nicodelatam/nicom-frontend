@@ -157,7 +157,7 @@ export default {
       if (invoicesMovements.length === 0) { return legalNote.concept }
       let concepts = ''
       invoicesMovements.forEach((movement, index) => {
-        concepts += `${movement.type === 'FACTURACION MENSUAL' ? movement.concept : movement.type} $${Number(movement.amount).toLocaleString('es')}`
+        concepts += `${movement.type === 'FACTURACION MENSUAL' ? movement.concept : movement.type === 'ADELANTO' ? movement.details : movement.type} $${Number(movement.amount).toLocaleString('es')}`
         if (index < invoicesMovements.length - 1) {
           concepts += ', '
         }

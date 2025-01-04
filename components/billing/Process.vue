@@ -96,7 +96,8 @@ export default {
         { text: 'Nombre', value: 'normalized_client.name', sortable: false },
         { text: 'Celular', value: 'normalized_client.phone', sortable: false },
         { text: 'Estado del envio', value: 'messageSent', sortable: false }
-      ]
+      ],
+      newBalance: 0
     }
   },
   computed: {
@@ -150,6 +151,136 @@ export default {
       this.loading = false
       this.end = true
     },
+    async getBalancesInFavor (serviceId) {
+      return await this.$store.dispatch('billing/getBalancesInFavor', {
+        token: this.$store.state.auth.token,
+        serviceId
+      })
+    },
+    async applyBalanceInFavorToInvoiceAndCreateLegalNote (activeService, infavor) {
+      const invoicePrice = activeService.offer.price
+      const balanceInFavor = infavor.balance
+      let balanceToApply = 0
+      let balanceLeft = 0
+      if (balanceInFavor >= invoicePrice) {
+        balanceToApply = invoicePrice
+        balanceLeft = balanceInFavor - balanceToApply
+
+        const recentInvoice = await this.$store.dispatch('billing/createInvoice', {
+          balance: 0,
+          value: invoicePrice,
+          month: this.month.value,
+          year: this.year,
+          type: 'FACTURA',
+          offer: activeService.offer.id,
+          concept: 'FACTURACION MENSUAL',
+          details: this.month.text,
+          payed: true,
+          partial: false,
+          indebt: false,
+          service: activeService.id,
+          invoice_type: 1,
+          limit: this.limit,
+          token: this.$store.state.auth.token
+        })
+
+        const legalNote = {
+          city: activeService.city.name,
+          clienttype: activeService.name,
+          token: this.$store.state.auth.token,
+          biller: this.$store.state.auth,
+          service: activeService.id,
+          concept: 'APLICA SALDO A FAVOR',
+          debit: 0,
+          credit: balanceToApply,
+          connect: true,
+          invoices: [recentInvoice]
+        }
+        const legalNoteRes = await this.$store.dispatch('billing/createLegalNote', legalNote)
+
+        await this.$store.dispatch('billing/createInvoiceMovement', {
+          token: this.$store.state.auth.token,
+          biller: this.$store.state.auth,
+          invoice: recentInvoice,
+          type: 'ADELANTO',
+          concept: recentInvoice.details,
+          amount: recentInvoice.value,
+          details: 'APLICA SALDO A FAVOR',
+          legalNote: legalNoteRes.id
+        })
+
+        await this.$store.dispatch('billing/updateInvoice', { // Update in favor invoice
+          token: this.$store.state.auth.token,
+          invoice: infavor,
+          payed: balanceLeft === 0,
+          balance: balanceLeft
+        })
+      } else {
+        balanceToApply = invoicePrice - balanceInFavor
+        balanceLeft = 0
+
+        const recentInvoice = await this.$store.dispatch('billing/createInvoice', {
+          balance: balanceToApply,
+          value: invoicePrice,
+          month: this.month.value,
+          year: this.year,
+          type: 'FACTURA',
+          offer: activeService.offer.id,
+          concept: 'FACTURACION MENSUAL',
+          details: this.month.text,
+          payed: false,
+          partial: true,
+          indebt: false,
+          service: activeService.id,
+          invoice_type: 1,
+          limit: this.limit,
+          token: this.$store.state.auth.token
+        })
+
+        const legalNote = {
+          city: activeService.city.name,
+          clienttype: activeService.name,
+          token: this.$store.state.auth.token,
+          biller: this.$store.state.auth,
+          service: activeService.id,
+          concept: 'APLICA SALDO A FAVOR',
+          debit: 0,
+          credit: balanceToApply,
+          connect: true,
+          invoices: [recentInvoice]
+        }
+        const legalNoteRes = await this.$store.dispatch('billing/createLegalNote', legalNote)
+
+        await this.$store.dispatch('billing/createInvoiceMovement', {
+          token: this.$store.state.auth.token,
+          biller: this.$store.state.auth,
+          invoice: recentInvoice,
+          type: 'ADELANTO',
+          concept: recentInvoice.details,
+          amount: balanceInFavor,
+          details: 'APLICA SALDO A FAVOR',
+          legalNote: legalNoteRes.id
+        })
+
+        await this.$store.dispatch('billing/updateInvoice', { // Update in favor invoice
+          token: this.$store.state.auth.token,
+          invoice: infavor,
+          payed: balanceLeft === 0,
+          balance: balanceLeft
+        })
+      }
+    },
+    async processBalancesInFavor (activeService) {
+      const balancesInFavor = await this.getBalancesInFavor(activeService.id) // Should return an array of balances in favor
+      const validBalances = balancesInFavor.filter(b => b.balance > 0)
+      if (validBalances.length < 1) {
+        return false
+      }
+      balancesInFavor.forEach(async (balanceInFavor) => {
+        await this.applyBalanceInFavorToInvoiceAndCreateLegalNote(activeService, balanceInFavor)
+      })
+      return true
+    },
     async generateBilling () {
       this.loading = true
       for (let i = 0; i < this.activeServices.length; i++) {
@@ -169,7 +300,14 @@ export default {
           billingmonth: this.month.value,
           billingyear: this.year
         })
-        await this.$store.dispatch('billing/addMovement', {
+
+        const balancesInFavor = await this.processBalancesInFavor(this.activeServices[i])
+        if (balancesInFavor) {
+          this.generatedBills++
+          continue
+        }
+
+        await this.$store.dispatch('billing/createInvoice', {
           balance: this.activeServices[i].offer.price,
           value: this.activeServices[i].offer.price,
           month: this.month.value,

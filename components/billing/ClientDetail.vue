@@ -3,6 +3,7 @@
     <client-only>
       <v-data-table
         ref="billDataTable"
+        v-model="selected"
         :headers="headers"
         :items.sync="invoices"
         :items-per-page.sync="itemsPerPage"
@@ -15,6 +16,7 @@
         :no-data-text="showPayed ? 'No hay facturas pagas aun...' : 'Usuario al día'"
         loading-text="Cargando información de clientes..."
         dense
+        show-select
         hide-default-footer
         mobile-breakpoint="100"
         @page-count="pageCount = $event"
@@ -22,7 +24,7 @@
       >
         <template v-slot:[`item.invoice_type.name`]="props">
           <v-chip
-            :color="props.item.balance > 0 ? props.item.cancelled ? 'red' : 'orange' : 'green'"
+            :color="props.item.balance > 0 ? props.item.cancelled ? 'red' : props.item.concept === 'ADELANTO' ? 'primary' : 'orange' : 'green'"
             text
             small
             label
@@ -41,8 +43,14 @@
         </template>
         <template v-slot:[`item.actions`]="props">
           <span class=" d-xl-flex justify-end" :data-index="props.index">
+            <BillingApplyBalanceInFavor
+              v-if="!showPayed && props.item.concept === 'ADELANTO'"
+              :infavor="props.item"
+              :service="currentService"
+              class="mr-2"
+            />
             <BillingPayBill
-              v-if="!showPayed"
+              v-if="!showPayed && props.item.concept !== 'ADELANTO'"
               :service="currentService"
               :invoice="props.item"
               :index="props.index"
@@ -50,13 +58,18 @@
               class="mr-2"
               @updateInvoiceList="updateInvoiceList()"
             />
-            <BillingDepositHistory :bill="props.item" class="mr-2" />
+            <BillingDepositHistory
+              v-if="props.item.concept !== 'ADELANTO'"
+              :bill="props.item"
+              class="mr-2"
+            />
             <BillingCancelBill
-              v-if="!showPayed"
+              v-if="!showPayed && props.item.concept !== 'ADELANTO'"
               :bill="props.item"
               class="mr-2"
             />
             <v-btn
+              v-if="props.item.concept !== 'ADELANTO'"
               class="white black--text"
               x-small
               @click="openPrintReceipt(props.item)"
@@ -86,7 +99,8 @@ export default {
         { text: 'Saldo Pendiente', sortable: false, value: 'debt' },
         { text: 'Anulada', sortable: false, value: 'cancelreason' },
         { text: 'Acciones', value: 'actions', sortable: false, class: 'text-right' }
-      ]
+      ],
+      selected: []
     }
   },
   computed: {
@@ -98,6 +112,11 @@ export default {
     },
     currentService () {
       return this.$store.state.billing.currentService
+    }
+  },
+  watch: {
+    selected () {
+      this.$store.commit('billing/setSelected', this.selected)
     }
   },
   methods: {
