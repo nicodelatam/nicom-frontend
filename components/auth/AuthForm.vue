@@ -157,7 +157,7 @@ export default {
       this.loginSuccessful = true
       const qs = require('qs')
       const query = qs.stringify({
-        populate: ['role', 'menus', 'companies', 'companies.cities', 'companies.cities.mikrotiks', 'companies.clienttypes', 'preferredcompany']
+        populate: ['role', 'menus', 'companies', 'companies.cities', 'companies.cities.mikrotiks', 'companies.clienttypes', 'preferredcompany', 'preferredcity', 'preferredclienttype']
       },
       {
         encodeValuesOnly: true
@@ -172,7 +172,8 @@ export default {
         .then(res => res.json())
         .then((userResponse) => {
           const userData = userResponse
-          const userCompanies = userResponse.companies.map((company) => {
+          console.log(userData)
+          const userCompanies = userData.companies.map((company) => {
             return {
               id: company.id,
               name: company.name,
@@ -180,6 +181,7 @@ export default {
               clienttypes: company.clienttypes || null
             }
           })
+          console.log(userCompanies)
           const userMenus = userResponse.menus.map((menu) => {
             return {
               id: menu.id,
@@ -198,8 +200,8 @@ export default {
             const auth = {
               id: userData.id,
               username: userData.username,
-              preferredcity: userCompanies[0].cities[0],
-              preferredclienttype: userCompanies[0].clienttypes[0],
+              preferredcity: userData.preferredcity,
+              preferredclienttype: userData.preferredclienttype,
               preferredcompany: userData.preferredcompany,
               companies: userCompanies,
               menu: userMenus.sort((a, b) => a.priority - b.priority),
@@ -208,18 +210,18 @@ export default {
             }
             const authCookie = {
               token: response.jwt,
-              preferredcity: { name: userCompanies[0].cities[0].name },
-              preferredclienttype: { name: userCompanies[0].clienttypes[0].name },
-              preferredcompany: { name: userCompanies[0].name }
+              preferredcity: { name: userData.preferredcity.name },
+              preferredclienttype: { name: userData.preferredclienttype.name },
+              preferredcompany: { name: userData.preferredcompany.name }
             }
             Cookie.set('auth', authCookie, { expires: 7, path: '/' })
             localStorage.setItem('auth', JSON.stringify(auth))
-            const redirectPath = `/client?city=${auth && auth.preferredcity ? auth.preferredcity.name : userCompanies[0].cities[0].name}&clienttype=${userData && auth.preferredclienttype ? auth.preferredclienttype.name : 'INTERNET'}&view=TODOS`
+            const redirectPath = `/client?company=${auth && auth.preferredcompany ? auth.preferredcompany.name : userCompanies[0].companies[0].name}&city=${auth && auth.preferredcity ? auth.preferredcity.name : userCompanies[0].cities[0].name}&clienttype=${userData && auth.preferredclienttype ? auth.preferredclienttype.name : 'INTERNET'}&view=TODOS`
             window.location.href = redirectPath
             this.isLoading = false
           }
-        }).catch((_) => {
-          this.errorMessages = 'error'
+        }).catch((e) => {
+          this.errorMessages = e
           this.loginFailed = true
           this.loginSuccessful = false
           this.isLoading = false

@@ -21,7 +21,7 @@
     </v-select>
     <v-select
       v-model="selectedCity"
-      :items="cities"
+      :items="currentCompany.cities"
       label="Ciudad"
       item-value="id"
       item-text="name"
@@ -40,7 +40,7 @@
     </v-select>
     <v-select
       v-model="selectedClienttype"
-      :items="clienttypes"
+      :items="currentCompany.clienttypes"
       label="Tipo"
       item-value="id"
       item-text="name"
@@ -69,20 +69,14 @@ export default {
     }
   },
   computed: {
-    currentCity () {
-      return this.$store.state.company.cities ? this.$store.state.company.cities.find(c => c.name === this.$route.query.city) : null
-    },
-    currentClienttype () {
-      return this.$store.state.company.clienttypes ? this.$store.state.company.clienttypes.find(c => c.name === this.$route.query.clienttype) : null
-    },
     currentCompany () {
       return this.$store.state.auth.companies ? this.$store.state.auth.companies.find(c => c.name === this.$route.query.company) : null
     },
-    cities () {
-      return this.$store.state.company.cities ? this.$store.state.company.cities : []
+    preferredCity () {
+      return this.$store.state.auth.preferredcity ? this.$store.state.auth.preferredcity : null
     },
-    clienttypes () {
-      return this.$store.state.company.clienttypes ? this.$store.state.company.clienttypes : []
+    preferredClienttype () {
+      return this.$store.state.auth.preferredclienttype ? this.$store.state.auth.preferredclienttype : null
     },
     companies () {
       return this.$store.state.auth.companies ? this.$store.state.auth.companies : []
@@ -93,23 +87,26 @@ export default {
   },
   watch: {
     '$route.query.company' () {
-      this.selectedCompany = this.currentCompany
-      this.selectedCity = this.currentCity
-      this.selectedClienttype = this.currentClienttype
+      setTimeout(() => {
+        this.changeCompany(this.selectedCompany)
+      }, 100)
     }
   },
   mounted () {
     setTimeout(() => {
-      this.selectedCity = this.currentCity
-      this.selectedClienttype = this.currentClienttype
+      this.changeCompany(this.selectedCompany)
     }, 100)
+    this.selectedCity = this.preferredCity
+    this.selectedClienttype = this.preferredClienttype
     this.selectedCompany = this.currentCompany
-    this.changeCompany(this.selectedCompany)
   },
   methods: {
     changeCompany (company) {
-      this.$router.push({ path: this.$route.path, query: { city: company.cities[0].name, clienttype: company.clienttypes[0].name, company: company.name } })
+      console.log('changeCompany', company)
+      this.$router.push({ path: this.$route.path, query: { city: company.cities[0].name, clienttype: company.clienttypes[0].name, company: this.selectedCompany.name } })
       this.$store.commit('company/setCurrentCompany', company)
+      this.selectedCity = company.cities[0]
+      this.selectedClienttype = company.clienttypes[0]
     },
     changeCity (city) {
       this.$router.push({ path: this.$route.path, query: { city: city.name, clienttype: this.$route.query.clienttype, company: this.$route.query.company } })
