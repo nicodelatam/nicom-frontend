@@ -102,7 +102,6 @@ export default {
   },
   methods: {
     changeCompany (company) {
-      console.log('changeCompany', company)
       this.$router.push({ path: this.$route.path, query: { city: company.cities[0].name, clienttype: company.clienttypes[0].name, company: this.selectedCompany.name } })
       this.$store.commit('company/setCurrentCompany', company)
       this.selectedCity = company.cities[0]
