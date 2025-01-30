@@ -136,7 +136,7 @@ export default {
       this.$store.commit('billing/resetSelected')
       this.$store.commit('billing/refresh')
       this.loading = false
-      window.open(`/bill?id=${legalNote.id}`)
+      window.open(`/bill?id=${legalNote.id}&city=${this.$route.query.city}&clienttype=${this.$route.query.clienttype}&company=${this.$route.query.company}`)
     },
     async saveLegalNoteToDb (invoices, amount) {
       const legalNote = {

@@ -139,7 +139,7 @@ export default {
         payed: this.billingInfo.payBill.amount === this.balance || !this.billingInfo.payBill.amount,
         balance: this.billingInfo.payBill.amount ? this.balance - this.billingInfo.payBill.amount : this.balance - this.invoice.balance
       })
-      window.open(`/bill?id=${legalNoteRes.id}`)
+      window.open(`/bill?id=${legalNoteRes.id}&city=${this.$route.query.city}&clienttype=${this.$route.query.clienttype}&company=${this.$route.query.company}`)
       this.$store.commit('billing/resetSelected')
       this.$store.commit('billing/refresh')
       this.loading = false
