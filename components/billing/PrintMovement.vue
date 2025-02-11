@@ -1,10 +1,11 @@
 <template>
   <v-btn
-    icon
     color="white black--text"
+    class="rounded-xl"
     @click="openPrintReceipt(invoices)"
   >
     <v-icon>mdi-printer</v-icon>
+    Imprimir Facturas
   </v-btn>
 </template>
 <script>

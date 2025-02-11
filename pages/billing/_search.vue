@@ -32,22 +32,16 @@
             </nuxt-link>
           </v-card-title>
           <v-card-text>
-            <div>
-              <v-btn
-                rounded
-                text
-                class="grey darken-2 mr-2"
-              >
-                <v-icon class="mr-1">
-                  mdi-map-marker-circle
-                </v-icon>
-                {{ currentService.city.name }}
-              </v-btn>
-              <MainClientControl :service="currentService" :index="-1" class="mr-2" />
-              <CreateTicket :service="currentService" :filled="true" />
-              <BillingPrintMovement :service="currentService" />
-              <BillingClientAddAmount :service="currentService" />
-              <BillingToggleArchive class="ml-2" />
+            <div style="display:flex;justify-content: space-between;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <CreateTicket :service="currentService" :filled="true" />
+                <MainClientControl :service="currentService" :index="-1" />
+                <BillingPrintMovement :service="currentService" />
+                <BillingClientAddAmount :service="currentService" />
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <BillingToggleArchive />
+              </div>
             </div>
           </v-card-text>
           <v-card-text style="height: calc(100vh - 450px);overflow-y:scroll;">

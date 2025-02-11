@@ -1,32 +1,13 @@
 <template>
-  <div class="mt-3">
+  <v-container fluid class="px-0">
     <v-row
       v-if="searchResult"
+      class="mt-3"
     >
       <v-col
-        v-if="$store.state.isDesktop"
         cols="12"
-        md="4"
-        lg="3"
-        class="pr-0"
-      >
-        <v-card
-          class="rounded-lg"
-        >
-          <v-list-item two-line>
-            <v-list-item-content>
-              <v-list-item-subtitle><strong>{{ searchResult.name }}</strong></v-list-item-subtitle>
-              <v-list-item-subtitle>Documento de Identidad: <strong>{{ searchResult.dni }}</strong></v-list-item-subtitle>
-              <v-list-item-subtitle>Celular / Telefono: <strong>{{ searchResult.phone }}</strong></v-list-item-subtitle>
-              <v-list-item-subtitle>Correo Electrónico: <strong>{{ searchResult.email }}</strong></v-list-item-subtitle>
-            </v-list-item-content>
-          </v-list-item>
-        </v-card>
-      </v-col>
-      <v-col
-        cols="12"
-        md="4"
-        lg="3"
+        md="6"
+        lg="4"
       >
         <v-card class="rounded-lg">
           <v-card-title>
@@ -81,8 +62,8 @@
       </v-col>
       <v-col
         cols="12"
-        md="4"
-        lg="6"
+        md="6"
+        lg="8"
       >
         <v-card v-if="indexOfSelectedService !== null && currentService" class="rounded-lg mb-3">
           <v-card-title>
@@ -451,7 +432,7 @@
       indeterminate
       color="primary"
     />
-  </div>
+  </v-container>
 </template>
 <script>
 export default {

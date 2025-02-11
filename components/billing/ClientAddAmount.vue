@@ -7,12 +7,13 @@
       <v-tooltip top>
         <template v-slot:activator="{ on, attrs }">
           <v-btn
-            icon
-            :color="$vuetify.theme.dark ? 'white' : 'primary'"
+            :color="$vuetify.theme.dark ? 'white black--text' : 'primary'"
+            class="rounded-xl"
             v-bind="{...attrs, ...attrDialog}"
             v-on="{ ...on, ...onDialog }"
           >
             <v-icon>mdi-currency-usd</v-icon>
+            Agregar Cobro
           </v-btn>
         </template>
         <span>Generar Cobro</span>
