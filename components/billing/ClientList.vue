@@ -119,6 +119,9 @@ export default {
     }
   },
   computed: {
+    direct () {
+      return this.$route.query.direct
+    },
     search () {
       return this.$route.query.search
     },
@@ -180,9 +183,12 @@ export default {
       this.getClientBySearch()
     }
   },
-  mounted () {
-    if (this.search) {
+  async mounted () {
+    if (this.search && !this.direct) {
       this.getClientBySearch()
+    } else if (this.search && this.direct) {
+      const serviceId = await this.$store.dispatch('client/getServicesFromDatabaseByDirectSearch', { search: this.search, company: this.$route.query.company, city: this.$route.query.city, clienttype: this.$route.query.clienttype, token: this.$store.state.auth.token })
+      this.$router.push({ path: `/billing/${serviceId}?company=${this.$route.query.company}&city=${this.$route.query.city}&clienttype=${this.$route.query.clienttype}` })
     } else {
       this.resetsearchfn()
     }

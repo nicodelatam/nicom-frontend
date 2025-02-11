@@ -11,7 +11,7 @@
       loading-text="Cargando recibos..."
       dense
       hide-default-footer
-      :caption="`Movimientos para servicio ID: ${$route.params.search}`"
+      :caption="`Movimientos de: ${currentService.id} ${currentService.code} ${currentService.client_name}`"
       mobile-breakpoint="100"
       @page-count="pageCount = $event"
     >
@@ -88,6 +88,9 @@ export default {
     },
     showPayed () {
       return this.$store.state.billing.showPayed
+    },
+    currentService () {
+      return this.$store.state.billing.currentService
     }
   },
   methods: {

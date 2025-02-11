@@ -23,23 +23,21 @@
         class="parent"
       >
         <v-card class="rounded-lg">
-          <v-card-title class="text-caption">
-            <nuxt-link
-              :to="`/client/${currentService.normalized_client.id}?service=${currentService.id}&city=${$route.query.city}&clienttype=${$route.query.clienttype}`"
-              class="hideMe rounded-xl text-body-1 grey--text lighten-2 text-weight-bold"
-            >
-              {{ currentService.code }} / {{ currentService.normalized_client.name }} / {{ processAddresses(currentService) }} / {{ processAddressesNeighborhood(currentService) }}
-            </nuxt-link>
-          </v-card-title>
           <v-card-text>
             <div style="display:flex;justify-content: space-between;">
               <div style="display:flex;align-items:center;gap:8px;">
-                <CreateTicket :service="currentService" :filled="true" />
+                <nuxt-link
+                  :to="`/client/${currentService.normalized_client.id}?service=${currentService.id}&city=${$route.query.city}&clienttype=${$route.query.clienttype}`"
+                  class="hideMe rounded-xl text-body-1 grey--text lighten-2 text-weight-bold"
+                >
+                  <v-icon>mdi-arrow-left</v-icon>
+                </nuxt-link>
                 <MainClientControl :service="currentService" :index="-1" />
                 <BillingPrintMovement :service="currentService" />
                 <BillingClientAddAmount :service="currentService" />
               </div>
               <div style="display:flex;align-items:center;gap:8px;">
+                <CreateTicket :service="currentService" :filled="true" />
                 <BillingToggleArchive />
               </div>
             </div>

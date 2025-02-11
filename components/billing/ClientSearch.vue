@@ -74,7 +74,12 @@ export default {
   methods: {
     text: item => `${item.code} - ${item.dni} - ${item.name} - ${item.phone}`,
     searchServices () {
-      this.$router.push({ path: '/billing', query: { search: this.search, company: this.$route.query.company, city: this.$route.query.city, clienttype: this.$route.query.clienttype } })
+      // check if the search is a number
+      if (isNaN(this.search)) {
+        this.$router.push({ path: '/billing', query: { search: this.search, direct: false, company: this.$route.query.company, city: this.$route.query.city, clienttype: this.$route.query.clienttype } })
+      } else {
+        this.$router.push({ path: '/billing', query: { search: this.search, direct: true, company: this.$route.query.company, city: this.$route.query.city, clienttype: this.$route.query.clienttype } })
+      }
     },
     changeCity (city) {
       this.$router.push({

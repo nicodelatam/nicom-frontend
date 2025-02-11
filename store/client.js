@@ -240,6 +240,54 @@ export const actions = {
       throw new Error(`CLEAR CLIENT ACTION ${error}`)
     }
   },
+  getServicesFromDatabaseByDirectSearch ({ commit }, payload) {
+    const qs = require('qs')
+    const query = qs.stringify({
+      filters: {
+        $and: [
+          {
+            city: {
+              name: payload.city
+            }
+          },
+          {
+            clienttype: {
+              name: payload.clienttype
+            }
+          }, {
+            company: {
+              name: payload.company
+            }
+          },
+          {
+            code: {
+              $eq: payload.search
+            }
+          }
+        ]
+      }
+    },
+    {
+      encodeValuesOnly: true
+    })
+    try {
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}services?${query}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${payload.token}`
+          }
+        })
+          .then(res => res.json())
+          .then(({ data: services }) => {
+            resolve(services[0].id)
+          })
+      })
+    } catch (error) {
+      throw new Error(`ACTION ${error}`)
+    }
+  },
   async getServicesFromDatabaseBySearch ({ commit }, payload) {
     const qs = require('qs')
     const query = qs.stringify({

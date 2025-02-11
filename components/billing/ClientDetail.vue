@@ -13,7 +13,7 @@
         sort-by="id"
         sort-asc
         calculate-widths
-        :no-data-text="showPayed ? 'No hay facturas pagas aun...' : 'Usuario al día'"
+        :no-data-text="showPayed ? 'No hay facturas pagas aun...' : `${currentService.code} ${currentService.client_name} Se encuentra al día`"
         loading-text="Cargando información de clientes..."
         dense
         show-select
