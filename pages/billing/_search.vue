@@ -42,7 +42,7 @@
               </div>
             </div>
           </v-card-text>
-          <v-card-text style="overflow-y:scroll;">
+          <v-card-text style="height: calc(100svh - 390px);;overflow-y:scroll;">
             <BillingClientDetail />
           </v-card-text>
           <v-card-actions style="position: absolute;bottom: 0;border-top:grey solid 1px;width:100%;" class="d-flex pl-6 grey darken-4">
