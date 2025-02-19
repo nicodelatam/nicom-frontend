@@ -235,6 +235,7 @@ export default {
         Fecha: row.createdAt,
         Usuario: row.service.code,
         Nombre: row.service.normalized_client.name,
+        Plan: row.service.offer.name + ' - ' + row.service.offer.price,
         Concepto: this.formatConcepts(row.invoice_movements, row),
         Debido: row.debit,
         Credito: row.credit,
