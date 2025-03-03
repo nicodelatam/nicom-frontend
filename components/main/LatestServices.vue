@@ -87,7 +87,7 @@
           <template v-slot:[`item.active`]="props">
             <v-chip
               :color="props.item.active ? props.item.indebt ? 'red darken-4' : 'green darken-3' : 'gray darken-3'"
-              :to="`/billing/${props.item.id}?city=${$route.query.city}&clienttype=${$route.query.clienttype}`"
+              :to="`/billing/${props.item.id}?city=${$route.query.city}&clienttype=${$route.query.clienttype}&company=${$route.query.company}`"
             >
               {{ props.item.active ? props.item.indebt ? 'D' : 'A' : 'R' }}
             </v-chip>
