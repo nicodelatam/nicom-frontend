@@ -22,8 +22,8 @@ export const actions = {
         body: JSON.stringify({
           data: {
             address: payload.address,
-            service: payload.service.id1,
-            neighborhood: payload.neighborhood.id2
+            service: payload.service.id,
+            neighborhood: payload.neighborhood.id
           }
         })
       })
