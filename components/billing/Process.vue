@@ -21,7 +21,7 @@
     </v-row>
     <v-row>
       <v-col>
-        <v-btn
+        <!-- <v-btn
           class="rounded-xl"
           color="primary"
           block
@@ -30,8 +30,8 @@
           @click="exit"
         >
           Finalizar
-        </v-btn>
-        <!-- <v-btn
+        </v-btn> -->
+        <v-btn
           class="rounded-xl"
           color="red"
           block
@@ -40,7 +40,7 @@
           @click="sendNotifications"
         >
           Enviar Notificaciones por WhatsApp
-        </v-btn> -->
+        </v-btn>
       </v-col>
     </v-row>
     <v-row>
@@ -115,12 +115,63 @@ export default {
     },
     limit () {
       return this.$store.state.billing.limit
+    },
+    currentCompany () {
+      return this.$store.state.company.currentCompany
     }
   },
   methods: {
+    getMetaServicesConfig () {
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}companies/${this.currentCompany.id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.$store.state.auth.token}`
+          }
+        })
+          .then(res => res.json())
+          .then(({ data: company }) => {
+            if (!company) {
+              this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_NOT_FOUND')
+              return null
+            }
+            if (!company.meta_token || !company.meta_template || !company.meta_endpoint) {
+              this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_INCOMPLETE')
+              return null
+            }
+            const metaServicesInfo = {
+              meta_token: company.meta_token,
+              meta_template: company.meta_template,
+              meta_endpoint: company.meta_endpoint
+            }
+            resolve(metaServicesInfo)
+          }).catch((error) => {
+            // eslint-disable-next-line no-console
+            console.error(error)
+            reject(error)
+          })
+      })
+    },
+    generateImageFromBill () {
+      fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices/${this.$route.params.id}/generate-image`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.$store.state.auth.token}`
+        }
+      })
+    },
     async sendNotifications () {
       this.loading = true
       const services = this.activeServices
+
+      const metaServicesInfo = await this.getMetaServicesConfig()
+      if (!metaServicesInfo) {
+        this.loading = false
+        this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_ERROR')
+        return
+      }
 
       for (let i = 0; i < services.length; i++) {
         this.$store.commit('notification/setSendIndex', i + 1)
@@ -128,7 +179,8 @@ export default {
         await this.$store.dispatch('notification/sendWhatsapp', {
           service: services[i],
           month: this.month,
-          token: this.$store.state.auth.token
+          token: this.$store.state.auth.token,
+          metaServicesInfo
         }).then(async (res) => {
           let success = false
           if (
@@ -307,7 +359,7 @@ export default {
           continue
         }
 
-        await this.$store.dispatch('billing/createInvoice', {
+        const createdInvoice = await this.$store.dispatch('billing/createInvoice', {
           balance: this.activeServices[i].offer.price,
           value: this.activeServices[i].offer.price,
           month: this.month.value,
@@ -336,6 +388,7 @@ export default {
         }
         await this.$store.dispatch('billing/createLegalNote', legalNote)
         await this.$store.dispatch('billing/updateServiceBalance', { balance: this.activeServices[i].balance + this.activeServices[i].offer.price, serviceId: this.activeServices[i].id, token: this.$store.state.auth.token })
+        this.generateImageFromBill(createdInvoice)
         this.generatedBills++
       }
       this.loading = false

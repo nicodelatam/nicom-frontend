@@ -44,23 +44,35 @@ export const mutations = {
 export const actions = {
   sendWhatsapp ({ commit }, payload) {
     return new Promise((resolve, reject) => {
-      fetch(this.$config.META_ENDPOINT, {
+      fetch(payload.metaServicesInfo.meta_endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.$config.META_TOKEN}`
+          Authorization: `Bearer ${payload.metaServicesInfo.meta_token}`
         },
         body: JSON.stringify(
           {
             messaging_product: 'whatsapp',
+            recipient_type: 'individual',
             to: `57${payload.service.normalized_client.phone}`,
             type: 'template',
             template: {
-              name: this.$config.META_TEMPLATE,
+              name: payload.metaServicesInfo.meta_template,
               language: {
-                code: 'es'
+                code: 'es_CO'
               },
               components: [
+                {
+                  type: 'header',
+                  parameters: [
+                    {
+                      type: 'image',
+                      image: {
+                        link: 'https://gteltelecomunicaciones.com/test.jpg'
+                      }
+                    }
+                  ]
+                },
                 {
                   type: 'body',
                   parameters: [
@@ -70,18 +82,7 @@ export const actions = {
                     },
                     {
                       type: 'text',
-                      text: `15 de ${payload.month.text}`
-                    }
-                  ]
-                },
-                {
-                  type: 'button',
-                  sub_type: 'url',
-                  index: '0',
-                  parameters: [
-                    {
-                      type: 'text',
-                      text: `${payload.service.normalized_client.dni}`
+                      text: `27 de ${payload.month.text}`
                     }
                   ]
                 }
