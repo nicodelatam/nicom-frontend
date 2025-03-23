@@ -165,7 +165,7 @@ export default {
     }
     // Verificar si tenemos servicios seleccionados
     if (this.$store.state.billing.selectedServices.length === 0) {
-      this.$toast.warning('No hay servicios seleccionados para facturar')
+      this.$toast.warning('No hay servicios seleccionados para facturar', { duration: 2000 })
       this.$router.push('/billing/generate/prepare')
     }
   },
@@ -416,7 +416,7 @@ export default {
 
     async sendNotifications () {
       this.loading = true
-      const services = this.activeServices
+      const services = JSON.parse(JSON.stringify(this.activeServices)) // Create a copy to avoid reactivity issues
 
       const metaServicesInfo = await this.getMetaServicesConfig()
       if (!metaServicesInfo) {
@@ -431,19 +431,24 @@ export default {
         const lastInvoice = services[i].invoices ? services[i].invoices.at(-1) : null
         const imgPath = lastInvoice?.image?.url || null
 
-        await this.$store.dispatch('notification/sendWhatsapp', {
-          service: services[i],
-          month: this.month,
-          token: this.$store.state.auth.token,
-          metaServicesInfo,
-          imgPath
-        }).then(async (res) => {
+        try {
+          const res = await this.$store.dispatch('notification/sendWhatsapp', {
+            service: services[i],
+            month: this.month,
+            token: this.$store.state.auth.token,
+            metaServicesInfo,
+            imgPath
+          })
+
           if (res && res.contacts && res.contacts[0]) {
             this.$toast.success('Notificación enviada', { duration: 2000 })
+
+            // Use proper Vuex mutation instead of direct state modification
             this.$store.commit('billing/messageSent', {
               index: i,
               success: true
             })
+
             if (lastInvoice) {
               await this.$store.dispatch('billing/updateSentStatus', {
                 token: this.$store.state.auth.token,
@@ -452,18 +457,20 @@ export default {
               })
             }
           } else {
+            // Mark as failed using Vuex mutation
             this.$store.commit('billing/messageSent', {
               index: i,
               success: false
             })
           }
-        }).catch((error) => {
+        } catch (error) {
           console.error('Error enviando notificación:', error)
+          // Mark as failed using Vuex mutation
           this.$store.commit('billing/messageSent', {
             index: i,
             success: false
           })
-        })
+        }
       }
 
       this.loading = false
@@ -675,7 +682,7 @@ export default {
               }
             })
           } else {
-            this.$toast.warning(`No se pudo generar imagen para factura de ${service.client_name}`)
+            this.$toast.warning(`No se pudo generar imagen para factura de ${service.client_name}`, { duration: 2000 })
           }
 
           // Crear nota legal
@@ -702,7 +709,7 @@ export default {
           this.generatedBills++
         }
 
-        this.$toast.success(`Se generaron ${this.generatedBills} facturas correctamente`)
+        this.$toast.success(`Se generaron ${this.generatedBills} facturas correctamente`, { duration: 2000 })
       } catch (error) {
         console.error('Error en la generación de facturas:', error)
         this.$toast.error('Error en el proceso de facturación')

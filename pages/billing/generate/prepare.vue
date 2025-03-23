@@ -7,7 +7,28 @@
 
       <v-card-text>
         <v-alert
-          v-if="activeServices.length === 0"
+          v-if="loading"
+          type="info"
+          dense
+          outlined
+        >
+          <v-row align="center">
+            <v-col cols="12" sm="8">
+              <div>Cargando servicios activos para el mes de {{ getMonthName() }} {{ year }}...</div>
+              <div class="text-caption mt-1">Este proceso puede tardar unos momentos dependiendo de la cantidad de servicios.</div>
+            </v-col>
+            <v-col cols="12" sm="4" class="text-center">
+              <v-progress-circular
+                indeterminate
+                color="primary"
+                size="24"
+              />
+            </v-col>
+          </v-row>
+        </v-alert>
+
+        <v-alert
+          v-else-if="activeServices.length === 0"
           type="warning"
           dense
           outlined
@@ -28,16 +49,20 @@
           <v-btn
             color="primary"
             class="mr-2 mb-2"
+            :disabled="loading"
             @click="$router.push('/billing/generate')"
           >
-            <v-icon left>mdi-arrow-left</v-icon>
+            <v-icon left>
+              mdi-arrow-left
+            </v-icon>
             Regresar
           </v-btn>
 
           <div>
             <v-btn
               color="info"
-              class="mr-2 mb-2"
+              class="mr-2"
+              :disabled="loading || activeServices.length === 0"
               @click="selectAll(!allSelected)"
             >
               <v-icon left>{{ allSelected ? 'mdi-checkbox-blank-outline' : 'mdi-checkbox-marked' }}</v-icon>
@@ -46,19 +71,26 @@
 
             <v-btn
               color="success"
-              :loading="loading"
-              :disabled="selectedServices.length === 0"
+              :loading="processingLoading"
+              :disabled="loading || selectedServices.length === 0"
               @click="continueToProcess"
             >
               Procesar {{ selectedServices.length }} facturas
-              <v-icon right>mdi-arrow-right</v-icon>
+              <v-icon right>
+                mdi-arrow-right
+              </v-icon>
             </v-btn>
           </div>
         </div>
       </v-card-text>
     </v-card>
 
-    <v-card v-if="activeServices.length > 0" class="rounded-xl elevation-0">
+    <v-skeleton-loader
+      v-if="loading"
+      type="table"
+      class="rounded-xl elevation-0 mt-3"
+    />
+    <v-card v-else-if="activeServices.length > 0" class="rounded-xl elevation-0">
       <v-card-title class="d-flex align-center">
         <span>Lista de servicios a facturar</span>
         <v-spacer />
@@ -118,6 +150,7 @@ export default {
   data () {
     return {
       loading: false,
+      processingLoading: false,
       search: '',
       selectedServices: [],
       headers: [
@@ -147,6 +180,17 @@ export default {
       return this.activeServices.length > 0 && this.selectedServices.length === this.activeServices.length
     }
   },
+  watch: {
+    // Observar cambios en el mes o año seleccionado
+    async 'month.value' () {
+      await this.getListOfActiveServices()
+      this.selectAll(true)
+    },
+    async year () {
+      await this.getListOfActiveServices()
+      this.selectAll(true)
+    }
+  },
 
   async mounted () {
     // Verificar si tenemos los datos necesarios
@@ -155,10 +199,9 @@ export default {
       return
     }
 
-    // Verificar si ya tenemos servicios activos
-    if (this.activeServices.length === 0) {
-      await this.getListOfActiveServices()
-    }
+    // Siempre cargar los servicios activos al montar el componente
+    // para asegurar que se actualicen según el mes/año seleccionado
+    await this.getListOfActiveServices()
 
     // Seleccionar todos los servicios por defecto que tengan tarifa
     this.selectAll(true)
@@ -220,6 +263,8 @@ export default {
         return
       }
 
+      this.processingLoading = true
+
       // Almacenar los servicios seleccionados en Vuex
       this.$store.commit('billing/setSelectedServices', this.selectedServices)
 
@@ -230,6 +275,8 @@ export default {
           clienttype: this.$route.query.clienttype,
           company: this.$route.query.company
         }
+      }).finally(() => {
+        this.processingLoading = false
       })
     }
   }

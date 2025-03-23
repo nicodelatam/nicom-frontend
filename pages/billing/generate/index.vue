@@ -146,6 +146,10 @@ export default {
   },
   methods: {
     continueToNextStep () {
+      // Reset active services before setting new month/year to force a refresh
+      this.$store.commit('billing/resetListOfActiveServices')
+      this.$store.commit('billing/resetSelectedServices')
+
       this.setMonth()
       this.setYear()
       this.$store.commit('billing/setLimit', {
