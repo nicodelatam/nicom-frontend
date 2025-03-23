@@ -92,3 +92,6 @@ sw.*
 utilsLocal/
 localhost.key.pem
 localhost.pem
+
+.context
+# Local context files for copilot

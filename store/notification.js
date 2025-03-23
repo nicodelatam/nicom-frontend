@@ -69,6 +69,7 @@ export const actions = {
                       type: 'image',
                       image: {
                         link: 'https://gteltelecomunicaciones.com/test.jpg'
+                        // link: this.$config.CDN_STRAPI_ENDPOINT + payload.imgPath
                       }
                     }
                   ]

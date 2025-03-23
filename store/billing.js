@@ -22,6 +22,12 @@ export const mutations = {
   e1 (state, payload) {
     state.e1 = payload.e1
   },
+  messageSent (state, payload) {
+    state.activeServices[payload.index].messageSent = payload.success
+  },
+  addInvoice (state, payload) {
+    state.activeServices[payload.index].invoices.push(payload.invoice)
+  },
   setYear (state, payload) {
     state.year = payload.year
   },
@@ -70,6 +76,13 @@ export const mutations = {
   },
   resetCurrentClient (state) {
     state.currentClient = null
+  },
+  resetActiveClients (state) {
+    state.activeClients = []
+  },
+  resetDate (state) {
+    state.month = null
+    state.year = null
   },
   setTotal (state, total) {
     state.total = total
@@ -178,7 +191,8 @@ export const actions = {
               indebt: payload.indebt,
               service: payload.service,
               invoice_type: payload.invoice_type,
-              limit: payload.limit ? payload.limit : null // Nulish for retrocompatibility
+              limit: payload.limit ? payload.limit : null,
+              image_path: payload.image_path ? payload.image_path : null
             }
           })
         })
@@ -815,6 +829,30 @@ export const actions = {
       throw new Error(`UPDATE BILLING PERIOD ON SERVICE ACTION ${error}`)
     }
   },
+  updateSentStatus ({ commit }, payload) {
+    try {
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices/${payload.invoice.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${payload.token}`
+          },
+          body: JSON.stringify({
+            data: {
+              sent: payload.success
+            }
+          })
+        })
+          .then(res => res.json())
+          .then((billingperiod) => {
+            resolve(billingperiod)
+          })
+      })
+    } catch (error) {
+      throw new Error(`UPDATE BILLING PERIOD ON SERVICE ACTION ${error}`)
+    }
+  },
   getListOfActiveServices ({ commit }, payload) {
     let nfilter = []
     const currentYear = new Date().getFullYear()
@@ -879,7 +917,7 @@ export const actions = {
       pagination: {
         pageSize: 5000
       },
-      populate: ['offer', 'plan', 'service_addresses', 'normalized_client', 'invoices', 'city']
+      populate: ['offer', 'plan', 'service_addresses', 'normalized_client', 'invoices', 'invoices.image', 'city']
     },
     {
       encodeValuesOnly: true

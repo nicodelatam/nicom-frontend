@@ -134,6 +134,7 @@ export default {
     }
   },
   mounted () {
+    this.resetFields()
     const year = new Date().getFullYear()
     const month = new Date().getMonth()
     this.year = year
@@ -143,6 +144,13 @@ export default {
     this.setSelectedClienttype()
   },
   methods: {
+    resetFields () {
+      this.month = null
+      this.year = 0
+      this.limit = null
+      this.$store.commit('billing/resetListOfActiveServices')
+      this.$store.commit('billing/resetDate')
+    },
     setQueryCity () {
       if (this.$route.query.city) {
         this.selectedCity = this.$store.state.company.cities.find(c => c.name === this.$route.query.city)
