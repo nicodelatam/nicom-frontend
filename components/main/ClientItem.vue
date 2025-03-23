@@ -97,10 +97,6 @@
               :service="currentService"
             />
             <MiscTicketHistory :service="currentService" />
-            <MiscAuxBillingList
-              v-if="$isAdmin() || $isBiller()"
-              :service="currentService"
-            />
             <BillingAuxBillingList
               v-if="$isAdmin() || $isBiller()"
               :service="currentService"

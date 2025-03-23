@@ -346,7 +346,6 @@ export default {
         this.$store.commit('notification/setSendIndex', i + 1)
 
         const lastInvoice = services[i].invoices.at(-1)
-        console.log('lastInvoice', lastInvoice)
         const imgPath = lastInvoice.image.url
 
         await this.$store.dispatch('notification/sendWhatsapp', {

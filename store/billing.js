@@ -777,7 +777,7 @@ export const actions = {
   getBillsByServiceId ({ commit }, payload) {
     const qs = require('qs')
     const query = qs.stringify({
-      populate: ['monthlybills']
+      populate: ['invoices', 'invoices.image']
     },
     {
       encodeValuesOnly: true
@@ -792,12 +792,12 @@ export const actions = {
           }
         })
           .then(res => res.json())
-          .then(({ data: bills }) => {
-            bills.monthlybills.sort((a, b) => {
+          .then(({ data: service }) => {
+            service.invoices.sort((a, b) => {
               return new Date(b.createdAt) - new Date(a.createdAt)
             })
-            commit('getBillsByServiceId', bills)
-            resolve(bills)
+            commit('getBillsByServiceId', service)
+            resolve(service)
           })
       })
     } catch (error) {
@@ -996,9 +996,9 @@ export const actions = {
     })
   },
   updateResend ({ commit }, payload) {
-    const resend = payload.bill.resend + 1
+    const resend = payload.invoice.resend + 1
     return new Promise((resolve, reject) => {
-      fetch(`${this.$config.API_STRAPI_ENDPOINT}monthlybills/${payload.bill.id}`, {
+      fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices/${payload.invoice.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -42,7 +42,7 @@
               { text: 'Reenviada el', value: 'resend_at', sortable: false },
               { text: 'Acciones', value: 'actions', sortable: false }
             ]"
-            :items="serviceData.monthlybills"
+            :items="serviceData.invoices"
             :loading="loading"
             :mobile-breakpoint="0"
             :no-data-text="'No hay datos para mostrar'"
@@ -74,7 +74,7 @@
                 <v-btn
                   class="mr-2"
                   color="primary"
-                  :href="`https://admin.Nicom.com/${item.path}`"
+                  :href="`${$config.CDN_STRAPI_ENDPOINT}${item.image.url}`"
                   target="_blank"
                   small
                 >
@@ -85,7 +85,7 @@
                   :color="item.success ? 'yellow darken-4' : 'green darken-4'"
                   :disabled="item.resend_at && !hasPassed24Hours(item.resend_at)"
                   small
-                  @click="sendBill(item)"
+                  @click="sendInvoice(item)"
                 >
                   <v-icon>mdi-send</v-icon>
                   {{ item.success ? 'Reenviar' : 'Enviar' }}
@@ -181,6 +181,9 @@ export default {
   computed: {
     serviceData () {
       return this.$store.state.billing.billsForCurrentService
+    },
+    currentCompany () {
+      return this.$store.state.company.currentCompany
     }
   },
   methods: {
@@ -202,17 +205,25 @@ export default {
         token: this.$store.state.auth.token
       })
     },
-    async sendBill (bill) {
+    async sendInvoice (invoice) {
+      const metaServicesInfo = await this.getMetaServicesConfig()
+      if (!metaServicesInfo) {
+        this.loading = false
+        this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_ERROR')
+        return
+      }
+
       this.loading = true
-      const month = this.months.find(m => m.value === bill.month)
-      await this.$store.dispatch('billing/sendBill', {
+      await this.$store.dispatch('notification/sendWhatsapp', {
         service: this.service,
-        bill,
-        month
+        month: invoice.details,
+        token: this.$store.state.auth.token,
+        metaServicesInfo,
+        imgPath: invoice.image.url
       })
       await this.$store.dispatch('billing/updateResend', {
         token: this.$store.state.auth.token,
-        bill
+        invoice
       })
       await this.getBillsByServiceId()
       this.loading = false
@@ -222,6 +233,38 @@ export default {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
+      })
+    },
+    getMetaServicesConfig () {
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}companies/${this.currentCompany.id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.$store.state.auth.token}`
+          }
+        })
+          .then(res => res.json())
+          .then(({ data: company }) => {
+            if (!company) {
+              this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_NOT_FOUND')
+              return null
+            }
+            if (!company.meta_token || !company.meta_template || !company.meta_endpoint) {
+              this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_INCOMPLETE')
+              return null
+            }
+            const metaServicesInfo = {
+              meta_token: company.meta_token,
+              meta_template: company.meta_template,
+              meta_endpoint: company.meta_endpoint
+            }
+            resolve(metaServicesInfo)
+          }).catch((error) => {
+            // eslint-disable-next-line no-console
+            console.error(error)
+            reject(error)
+          })
       })
     }
   }
