@@ -216,7 +216,10 @@ export default {
       this.loading = true
       await this.$store.dispatch('notification/sendWhatsapp', {
         service: this.service,
-        month: invoice.details,
+        month: {
+          text: invoice.details,
+          value: this.months.find(m => m.value === invoice.month).value
+        },
         token: this.$store.state.auth.token,
         metaServicesInfo,
         imgPath: invoice.image.url
