@@ -58,7 +58,7 @@
 
 <script>
 export default {
-  name: 'CreateBulkTickets',
+  name: 'CloseBulkTickets',
   props: {
     selected: {
       type: Array,
