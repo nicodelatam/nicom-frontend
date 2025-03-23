@@ -731,10 +731,7 @@ export default {
         })
         this.sendWhatsapp({
           phone: this.currentTechnician.phone,
-          service: ticket.service,
-          month: this.$store.state.ticket.month,
-          metaServicesInfo: this.currentTechnician.metaServicesInfo,
-          imgPath: ticket.imgPath
+          service: ticket.service
         })
         this.currentTechnician = null
         setTimeout(() => {

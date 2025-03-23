@@ -566,6 +566,9 @@ export default {
     },
     technicians () {
       return this.$store.state.operator.operators
+    },
+    currentCompany () {
+      return this.$store.state.company.currentCompany
     }
   },
   mounted () {
@@ -681,7 +684,6 @@ export default {
         technicianid: this.technician,
         token: this.$store.state.auth.token
       })
-      this.technician = null
     },
     async createTicket () {
       this.loading = true
@@ -779,6 +781,10 @@ export default {
           const ticket = await input.json()
           if (this.technician) {
             this.saveAssignatedTechnician(ticket.data.id)
+            this.sendWhatsapp({
+              phone: this.technician.phone,
+              service: this.service
+            })
           }
           this.modal = false
           this.loading = false
@@ -792,6 +798,98 @@ export default {
       }).catch((error) => {
         // eslint-disable-next-line no-console
         console.error(error)
+      })
+    },
+    async sendWhatsapp (payload) {
+      const metaServicesInfo = await this.getMetaServicesConfig()
+      if (!metaServicesInfo) {
+        this.loading = false
+        this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_ERROR')
+        return
+      }
+
+      fetch(metaServicesInfo.meta_endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${metaServicesInfo.meta_token}`
+        },
+        body: JSON.stringify(
+          {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: `57${payload.phone}`,
+            type: 'template',
+            template: {
+              name: metaServicesInfo.meta_ticket_template,
+              language: {
+                code: 'es_CO'
+              },
+              components: [
+                {
+                  type: 'body',
+                  parameters: [
+                    {
+                      type: 'text',
+                      text: this.$route.query.clienttype
+                    },
+                    {
+                      type: 'text',
+                      text: `${payload.service.client_name} - ${payload.service.address} - ${payload.service.neighborhood}`
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        )
+      })
+        .then(res => res.json())
+        .then((res) => {
+          if (
+            res &&
+            res.contacts &&
+            res.contacts[0]
+          ) {
+            this.$toast.success('Ticket enviado', { duration: 3000 })
+            this.technician = null
+          } else {
+            this.$toast.error('Error al enviar el ticket', { duration: 3000 })
+            console.log(res)
+          }
+        })
+    },
+    getMetaServicesConfig () {
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}companies/${this.currentCompany.id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.$store.state.auth.token}`
+          }
+        })
+          .then(res => res.json())
+          .then(({ data: company }) => {
+            if (!company) {
+              this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_NOT_FOUND')
+              return null
+            }
+            if (!company.meta_token || !company.meta_template || !company.meta_endpoint) {
+              this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_INCOMPLETE')
+              return null
+            }
+            const metaServicesInfo = {
+              meta_token: company.meta_token,
+              meta_template: company.meta_template,
+              meta_endpoint: company.meta_endpoint,
+              meta_ticket_template: company.meta_ticket_template
+            }
+            resolve(metaServicesInfo)
+          }).catch((error) => {
+            // eslint-disable-next-line no-console
+            console.error(error)
+            reject(error)
+          })
       })
     },
     getSecondFromLastAddress (service) {
