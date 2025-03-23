@@ -93,5 +93,6 @@ utilsLocal/
 localhost.key.pem
 localhost.pem
 
-.context
+.context/*
+.github/*
 # Local context files for copilot
