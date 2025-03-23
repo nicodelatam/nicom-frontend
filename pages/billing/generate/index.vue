@@ -1,49 +1,69 @@
 <template>
-  <v-card :loading="loading" class="mb-4 rounded-xl mx-auto elevation-0">
-    <v-card-title class="text-caption text-center justify-center">
-      <strong class="mr-1">Generar estados de cuenta para {{ activeServices.length }}</strong> servicios activos en {{ $route.query.city }} a la fecha
-    </v-card-title>
-    <v-card-text class="d-flex">
-      <v-select
-        v-model="month"
-        :items="months"
-        return-object
-        label="Mes a facturar"
-        filled
-        dense
-        rounded
-        hide-details="auto"
-        class="mr-2"
-      />
-      <v-text-field
-        v-model.number="year"
-        label="Año a facturar"
-        type="number"
-        filled
-        rounded
-        dense
-        hide-details="auto"
-      />
-      <v-text-field
-        v-model="limit"
-        label="Fecha Límite de Pago"
-        type="date"
-        filled
-        rounded
-        dense
-        hide-details="auto"
-        :value="limit"
-      />
-    </v-card-text>
-  </v-card>
+  <v-container style="height:100%;display:grid;place-items:center;" class="pa-4">
+    <v-row>
+      <v-col
+        cols="12"
+        md="12"
+        lg="12"
+      >
+        <v-card :loading="loading" class="mb-4 rounded-xl mx-auto elevation-0" height="600">
+          <v-card-title class="text-center justify-center">
+            <strong class="mr-1">Generar estados de cuenta para {{ activeServices.length }}</strong> servicios activos en {{ $route.query.city }} a la fecha
+          </v-card-title>
+          <v-card-text class="d-flex flex-column align-content-space-around gap-10" style="height:70%;">
+            <v-select
+              v-model="month"
+              :items="months"
+              return-object
+              label="Mes a facturar"
+              filled
+              dense
+              rounded
+              hide-details="auto"
+              class="mr-2"
+            />
+            <v-text-field
+              v-model.number="year"
+              label="Año a facturar"
+              type="number"
+              filled
+              rounded
+              dense
+              hide-details="auto"
+            />
+            <v-text-field
+              v-model="limit"
+              label="Fecha Límite de Pago"
+              type="date"
+              filled
+              rounded
+              dense
+              hide-details="auto"
+              :value="limit"
+            />
+            <v-btn
+              :disabled="!month || !year"
+              color="primary"
+              class="mt-2"
+              @click="continueToNextStep"
+            >
+              Continuar <v-icon class="ml-1">
+                mdi-arrow-right
+              </v-icon>
+            </v-btn>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 <script>
 export default {
   data () {
     return {
+      month: null,
       year: 0,
       limit: null,
-      month: null,
       selectedCity: null,
       selectedClienttype: null,
       months: [
@@ -108,58 +128,44 @@ export default {
     },
     cities () {
       return this.$store.state.company.cities
-    }
-  },
-  watch: {
-    month (newVal, oldVal) {
-      if (newVal) {
-        this.setMonth()
-        this.getListOfActiveServices()
-        this.backToE1()
-      }
     },
-    year () {
-      this.setYear()
+    currentCity () {
+      return this.$store.state.company.cities.find(c => c.name === this.$route.query.city)
     },
-    limit () {
-      this.$store.commit('billing/setLimit', {
-        limit: this.limit
-      })
-    },
-    '$route' () {
-      this.backToE1()
-      this.$store.commit('billing/resetListOfActiveServices')
-      this.month = null
-      this.setMonth()
+    currentClienttype () {
+      return this.$store.state.company.clienttypes.find(c => c.name === this.$route.query.clienttype)
     }
   },
   mounted () {
-    this.resetFields()
     const year = new Date().getFullYear()
-    const month = new Date().getMonth()
     this.year = year
+
+    const month = new Date().getMonth()
     const limitTOISO = new Date(year, month, 17).toISOString().substring(0, 10)
     this.limit = limitTOISO
-    this.setQueryCity()
-    this.setSelectedClienttype()
   },
   methods: {
+    continueToNextStep () {
+      this.setMonth()
+      this.setYear()
+      this.$store.commit('billing/setLimit', {
+        limit: this.limit
+      })
+      this.$router.push({
+        path: '/billing/generate/prepare',
+        query: {
+          city: this.$route.query.city,
+          clienttype: this.$route.query.clienttype,
+          company: this.$route.query.company
+        }
+      })
+    },
     resetFields () {
       this.month = null
       this.year = 0
       this.limit = null
       this.$store.commit('billing/resetListOfActiveServices')
       this.$store.commit('billing/resetDate')
-    },
-    setQueryCity () {
-      if (this.$route.query.city) {
-        this.selectedCity = this.$store.state.company.cities.find(c => c.name === this.$route.query.city)
-      }
-    },
-    setSelectedClienttype () {
-      if (this.$route.query.clienttype) {
-        this.selectedClienttype = this.$store.state.company.clienttypes.find(c => c.name === this.$route.query.clienttype)
-      }
     },
     setYear () {
       this.$store.commit('billing/setYear', {
@@ -194,9 +200,6 @@ export default {
         }
         return false
       })
-    },
-    backToE1 () {
-      this.$store.commit('billing/e1', { e1: 1 })
     }
   }
 }

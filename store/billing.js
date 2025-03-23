@@ -1,6 +1,7 @@
 export const state = () => ({
   client: null,
   activeServices: [],
+  selectedServices: [], // New state for selected services
   currentService: null,
   e1: 1,
   invoices: [],
@@ -164,6 +165,12 @@ export const mutations = {
     } catch (error) {
       throw new Error(`GET LIST OF ACTIVE SERVICES MUTATE ${error}`)
     }
+  },
+  setSelectedServices (state, services) {
+    state.selectedServices = services
+  },
+  resetSelectedServices (state) {
+    state.selectedServices = []
   }
 }
 export const actions = {

@@ -157,7 +157,7 @@ export default {
       this.loginSuccessful = true
       const qs = require('qs')
       const query = qs.stringify({
-        populate: ['role', 'menus', 'companies', 'companies.cities', 'companies.cities.mikrotiks', 'companies.clienttypes', 'preferredcompany', 'preferredcity', 'preferredclienttype']
+        populate: ['role', 'menus', 'companies', 'companies.cities', 'companies.cities.mikrotiks', 'companies.clienttypes', 'companies.logo', 'preferredcompany', 'preferredcity', 'preferredclienttype']
       },
       {
         encodeValuesOnly: true
@@ -172,16 +172,19 @@ export default {
         .then(res => res.json())
         .then((userResponse) => {
           const userData = userResponse
-          console.log(userData)
           const userCompanies = userData.companies.map((company) => {
             return {
               id: company.id,
               name: company.name,
               cities: company.cities || null,
-              clienttypes: company.clienttypes || null
+              clienttypes: company.clienttypes || null,
+              logo: company.logo || null,
+              nit: company.nit || null,
+              address: company.address || null,
+              phone: company.phone || null,
+              email: company.email || null
             }
           })
-          console.log(userCompanies)
           const userMenus = userResponse.menus.map((menu) => {
             return {
               id: menu.id,
