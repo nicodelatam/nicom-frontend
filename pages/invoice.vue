@@ -35,7 +35,7 @@ export default {
         margin: 5,
         filename: 'FACTURA_' + this.invoice.service.client_name + '_' + this.invoice.createdAt + '.pdf',
         image: { type: 'jpeg', quality: 1 },
-        html2canvas: { scale: 2, width: 800, x: 0, y: 0 },
+        html2canvas: { scale: 2, width: 800, x: 0, y: 0, useCORS: true },
         jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
       }
       html2pdf().set(opt).from(element).save()
