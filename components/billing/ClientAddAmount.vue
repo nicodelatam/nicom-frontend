@@ -145,7 +145,7 @@ export default {
     async addAmount () {
       if (this.valid) {
         this.loading = true
-        await this.$store.dispatch('billing/createInvoice', {
+        const newInvoice = await this.$store.dispatch('billing/createInvoice', {
           balance: this.amount,
           value: this.amount,
           month: this.month,
@@ -169,7 +169,9 @@ export default {
           service: this.service.id,
           debit: this.billtype.name === 'ADELANTO' ? 0 : this.amount,
           credit: this.billtype.name === 'ADELANTO' ? this.amount : 0,
-          concept: this.billtype.name
+          concept: this.billtype.name,
+          invoices: [newInvoice],
+          connect: true
         }
         await this.$store.dispatch('billing/createLegalNote', legalNote)
         if (this.billtype.name === 'FACTURACION MENSUAL') {

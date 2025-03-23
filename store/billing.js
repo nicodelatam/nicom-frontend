@@ -679,7 +679,9 @@ export const actions = {
         'service',
         'service.offer',
         'service.normalized_client',
-        'service.service_addresses.neighborhood'
+        'service.service_addresses.neighborhood',
+        'service.invoices',
+        'service.invoices.invoice_type'
       ]
     },
     {

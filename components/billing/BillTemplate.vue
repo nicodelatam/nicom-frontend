@@ -105,12 +105,22 @@
       </div>
     </v-container>
     <v-container class="parent-info pa-0">
-      <div style="border-bottom:1px solid black;border-right:1px solid black;border-radius:0;font-weight:bold;grid-column: span 4" class="text-start py-5">
+      <div v-if="bill.concept !== 'ADELANTO' && bill.concept !== 'APLICA SALDO A FAVOR'" style="border-bottom:1px solid black;border-right:1px solid black;border-radius:0;font-weight:bold;grid-column: span 4" class="text-start py-5">
         <span
-          v-for="(movement, index) in bill.invoice_movements"
+          v-for="(movement, index) in bill.invoice_movements.filter(movement => movement.type !== 'ADELANTO')"
           :key="index"
         >
           Pago {{ movement.type === 'FACTURACION MENSUAL' ? 'Mes ' + movement.concept : movement.type }} ${{ Number(movement.amount).toLocaleString('es') }} pesos {{ movement.invoice.balance > 0 ? `| Saldo: $${Number(movement.invoice.balance).toLocaleString('es')}` : '' }}<br>
+        </span>
+      </div>
+      <div v-else-if="bill.concept === 'APLICA SALDO A FAVOR'" style="border-bottom:1px solid black;border-right:1px solid black;border-radius:0;font-weight:bold;grid-column: span 4" class="text-start py-5">
+        <span>
+          Saldo a favor aplicado: ${{ Number(bill.credit).toLocaleString('es') }} pesos
+        </span>
+      </div>
+      <div v-else style="border-bottom:1px solid black;border-right:1px solid black;border-radius:0;font-weight:bold;grid-column: span 4" class="text-start py-5">
+        <span>
+          Adelanto: ${{ Number(bill.credit).toLocaleString('es') }} pesos | Mes de {{ bill.invoices.find(invoice => invoice.payed === false && invoice.concept === "ADELANTO").details }} de {{ bill.invoices.find(invoice => invoice.payed === false && invoice.concept === "ADELANTO").year }}<br>
         </span>
       </div>
       <div style="border-bottom:1px solid black;border-radius:0;font-weight:bold;grid-column: span 4" class="justify-center d-flex align-center">
@@ -124,9 +134,19 @@
       </div>
       <div style="grid-column: span 4; grid-offset: 4;" class="py-5">
         <div>
-          <span v-if="bill.service.balance === 0" class="pagado">PAGADO</span>
+          <span v-if="getBalance() === 0 && bill.concept !== 'ADELANTO'" class="pagado">PAGADO</span>
+          <span v-else-if="bill.concept === 'ADELANTO'" class="abono">ADELANTO</span>
+          <span v-else-if="bill.concept === 'APLICA SALDO A FAVOR'" class="abono">PAGO A FAVOR</span>
           <span v-else class="abono">ABONO</span>
-          <strong>TOTAL PENDIENTE POR PAGAR: ${{ getBalance().toLocaleString('es') }} pesos</strong>
+          <strong v-if="bill.service.balance > 0 && bill.concept === 'ADELANTO'">${{ bill.credit.toLocaleString('es') }} pesos</strong>
+          <strong v-else-if="bill.concept === 'APLICA SALDO A FAVOR'">Aplicado a <span v-for="(item, index) in getInvoicesWithBalance()" :key="index">
+            {{ item.details }} de {{ item.year }}
+          </span></strong>
+          <strong v-else>TOTAL PENDIENTE POR PAGAR: ${{ getBalance().toLocaleString('es') }} <span v-if="getBalance() > 0">pesos de</span>
+            <span v-for="(item, index) in getItemsWithBalance()" :key="index">
+              {{ item.details }} de {{ item.year }}
+            </span>
+          </strong>
         </div>
       </div>
       <div style="font-weight:bold;grid-column: span 4; grid-offset: 4;" class="text-center">
@@ -158,9 +178,18 @@ export default {
       return humanDateFormat
     },
     getBalance () {
-      return this.bill.invoice_movements.reduce((acc, curr) => {
-        return acc + Number(curr.invoice.balance)
+      return this.bill.service.invoices.filter(invoice => invoice.invoice_type.name !== 'ADELANTO').reduce((acc, curr) => {
+        return acc + Number(curr.balance)
       }, 0)
+    },
+    getItemsWithBalance () {
+      return this.bill.service.invoices.filter(invoice => invoice.invoice_type.name !== 'ADELANTO' && invoice.balance > 0)
+    },
+    getInvoicesWithBalance () {
+      return this.bill.invoices
+    },
+    getValue () {
+      return this.bill.value
     }
   }
 }

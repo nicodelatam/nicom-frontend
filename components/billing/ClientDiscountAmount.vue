@@ -67,7 +67,7 @@ export default {
       let total = amount
       const copyInvoices = JSON.parse(JSON.stringify(invoices))
       const monthlyInvoices = copyInvoices.filter(invoice => invoice.invoice_type.name === 'FACTURACION MENSUAL')
-      const otherInvoices = copyInvoices.filter(invoice => invoice.invoice_type.name !== 'FACTURACION MENSUAL')
+      const otherInvoices = copyInvoices.filter(invoice => invoice.invoice_type.name !== 'FACTURACION MENSUAL' && invoice.invoice_type.name !== 'ADELANTO')
       for (let i = 0; i < monthlyInvoices.length; i++) {
         if (total > 0) {
           if (monthlyInvoices[i].balance > total) {
