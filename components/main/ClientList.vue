@@ -1,7 +1,7 @@
 <template>
   <v-container fluid>
     <v-row class="mt-0">
-      <v-col class="pt-0">
+      <v-col class="pa-0">
         <v-card class="elevation-0 rounded-lg">
           <v-card-text>
             <client-only>
@@ -15,6 +15,14 @@
                 hide-default-footer
                 mobile-breakpoint="100"
               >
+                <template v-slot:[`item.active`]="props">
+                  <v-chip
+                    :color="props.item.active ? props.item.indebt ? 'red darken-4' : 'green darken-3' : 'gray darken-3'"
+                    :to="`/billing/${props.item.id}?city=${$route.query.city}&clienttype=${$route.query.clienttype}&company=${$route.query.company}`"
+                  >
+                    {{ props.item.active ? props.item.indebt ? 'D' : 'A' : 'R' }}
+                  </v-chip>
+                </template>
                 <template v-slot:top>
                   <div class="d-flex">
                     <v-checkbox
@@ -47,6 +55,9 @@
                   >
                     {{ item.corporate === null ? 'No definido' : item.corporate === false ? 'Plan Hogar' : 'Corporativo' }}
                   </v-chip>
+                </template>
+                <template v-slot:[`item.balance`]="props">
+                  <strong> ${{ Number(props.item.balance).toLocaleString('es') }} </strong>
                 </template>
                 <template v-slot:[`item.actions`]="{ item }">
                   <v-tooltip top>
@@ -132,13 +143,16 @@ export default {
         { text: 'Cedula', value: 'dni', sortable: false },
         { text: 'Telefono', sortable: false, value: 'phone' }
       ] : [
+        { text: 'Estado', value: 'active', sortable: false },
         { text: 'Codigo', value: 'code', sortable: false },
         { text: 'Nombre', value: 'client_name', sortable: false },
         { text: 'Direccion', sortable: false, value: 'address' },
         { text: 'Barrio', value: 'neighborhood', sortable: false },
         { text: 'Telefono', sortable: false, value: 'phone' },
+        { text: 'Saldo', sortable: false, value: 'balance' },
         { text: 'Acciones', value: 'actions', sortable: false }
       ] : [
+        { text: 'Estado', value: 'active', sortable: false },
         { text: 'Acciones', value: 'actions', sortable: false },
         { text: 'Codigo', value: 'code', sortable: false },
         { text: 'Nombre', value: 'client_name', sortable: false },
