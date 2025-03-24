@@ -112,7 +112,7 @@
                   v-on="on"
                 >
                   <v-icon>mdi-currency-usd</v-icon>
-                  {{ Number(currentService.balance).toLocaleString('es') }}
+                  {{ Number(reducePeningInvoices(currentService.invoices)).toLocaleString('es') }}
                 </v-btn>
               </template>
               <span>Estados de cuenta</span>
@@ -533,6 +533,15 @@ export default {
       const changes = Object.keys(service).filter(key => service[key] !== oldService[key])
       return changes.length
     },
+    reducePeningInvoices (invoices) {
+      if (!invoices) { return 0 }
+      const pendingInvoices = invoices.filter(invoice => !invoice.payed && invoice.balance > 0 && invoice.concept !== 'ADELANTO')
+      if (pendingInvoices.length > 0) {
+        return pendingInvoices.reduce((acc, invoice) => acc + invoice.balance, 0)
+      } else {
+        return 0
+      }
+    },
     async updateClient () {
       this.$refs.saveStatusText.classList.remove('success--text')
       this.saveStatus = 'No hay cambios pendientes...'
@@ -601,7 +610,7 @@ export default {
     async getClientFromSearchParam () {
       const qs = require('qs')
       const query = qs.stringify({
-        populate: ['services', 'services.normalized_client', 'services.city', 'services.company', 'services.plan', 'services.service_addresses', 'services.service_addresses.neighborhood', 'services.technology', 'services.clienttype', 'services.offer', 'services.offer.plan', 'services.offermovements.offer', 'services.offermovements', 'services.debtmovements', 'services.debtmovements.technician', 'services.monthlybills', 'services.tvspec', 'services.tvspec.tvspectype']
+        populate: ['services', 'services.normalized_client', 'services.city', 'services.company', 'services.plan', 'services.invoices', 'services.service_addresses', 'services.service_addresses.neighborhood', 'services.technology', 'services.clienttype', 'services.offer', 'services.offer.plan', 'services.offermovements.offer', 'services.offermovements', 'services.debtmovements', 'services.debtmovements.technician', 'services.monthlybills', 'services.tvspec', 'services.tvspec.tvspectype']
       },
       {
         encodeValuesOnly: true

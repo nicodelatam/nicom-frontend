@@ -115,7 +115,7 @@
             </strong>
           </template>
           <template v-slot:[`item.balance`]="props">
-            <strong> ${{ Number(props.item.balance).toLocaleString('es') }} </strong>
+            <strong> ${{ Number(reducePeningInvoices(props.item.invoices)).toLocaleString('es') }} </strong>
           </template>
           <template v-slot:[`item.actions`]="{ item }">
             <v-tooltip top>
@@ -234,7 +234,7 @@ export default {
       const qs = require('qs')
       const query = qs.stringify({
         pagination: this.pagination,
-        populate: ['normalized_client', 'service_addressess', 'offer'],
+        populate: ['normalized_client', 'service_addressess', 'offer', 'invoices'],
         sort: 'createdAt:desc',
         filters: this.filterMonth ? {
           company: {
@@ -282,6 +282,15 @@ export default {
           })
       } catch (error) {
         throw new Error(`GET LATEST SERVICES MODULE ${error}`)
+      }
+    },
+    reducePeningInvoices (invoices) {
+      if (!invoices) { return 0 }
+      const pendingInvoices = invoices.filter(invoice => !invoice.payed && invoice.balance > 0 && invoice.concept !== 'ADELANTO')
+      if (pendingInvoices.length > 0) {
+        return pendingInvoices.reduce((acc, invoice) => acc + invoice.balance, 0)
+      } else {
+        return 0
       }
     },
     clearFilter () {
