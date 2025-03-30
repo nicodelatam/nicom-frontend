@@ -579,6 +579,12 @@ export default {
         }
         const legalNoteRes = await this.$store.dispatch('billing/createLegalNote', legalNote)
 
+        if (!legalNoteRes) {
+          this.$toast.error('Error creando el recibo.')
+          console.log(legalNote)
+          return
+        }
+
         await this.$store.dispatch('billing/createInvoiceMovement', {
           token: this.$store.state.auth.token,
           biller: this.$store.state.auth,
