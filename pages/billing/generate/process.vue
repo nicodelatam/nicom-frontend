@@ -513,8 +513,8 @@ export default {
         })
 
         const legalNote = {
-          city: activeService.city || this.$route.query.city,
-          clienttype: activeService.clienttype || this.$route.query.clienttype,
+          city: this.$route.query.city,
+          clienttype: this.$route.query.clienttype,
           token: this.$store.state.auth.token,
           biller: this.$store.state.auth,
           service: activeService.id,
@@ -525,6 +525,12 @@ export default {
           invoices: [recentInvoice]
         }
         const legalNoteRes = await this.$store.dispatch('billing/createLegalNote', legalNote)
+
+        if (!legalNoteRes) {
+          this.$toast.error('Error creando el recibo.')
+          console.log(legalNote)
+          return
+        }
 
         await this.$store.dispatch('billing/createInvoiceMovement', {
           token: this.$store.state.auth.token,
@@ -566,8 +572,8 @@ export default {
         })
 
         const legalNote = {
-          city: activeService.city || this.$route.query.city,
-          clienttype: activeService.clienttype || this.$route.query.clienttype,
+          city: this.$route.query.city,
+          clienttype: this.$route.query.clienttype,
           token: this.$store.state.auth.token,
           biller: this.$store.state.auth,
           service: activeService.id,
