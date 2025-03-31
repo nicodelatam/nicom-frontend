@@ -152,12 +152,12 @@ export default {
       return humanDateFormat
     },
     getBalance () {
-      return this.bill.service.invoices.filter(invoice => invoice.invoice_type.name !== 'ADELANTO').reduce((acc, curr) => {
+      return this.bill.service.invoices.filter(invoice => invoice.invoice_type.name !== 'ADELANTO' && !invoice.cancelled && invoice.createdAt <= this.bill.createdAt).reduce((acc, curr) => {
         return acc + Number(curr.balance)
       }, 0)
     },
     getItemsWithBalance () {
-      return this.bill.service.invoices.filter(invoice => invoice.invoice_type.name !== 'ADELANTO' && invoice.balance > 0)
+      return this.bill.service.invoices.filter(invoice => invoice.invoice_type.name !== 'ADELANTO' && invoice.balance > 0 && !invoice.cancelled && invoice.createdAt <= this.bill.createdAt)
     },
     getInvoicesWithBalance () {
       return this.bill.invoices

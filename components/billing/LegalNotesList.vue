@@ -50,7 +50,7 @@
       </template>
       <template v-slot:[`item.actions`]="props">
         <v-btn
-          v-if="props.item.debit === 0 && props.item.credit > 0"
+          v-if="props.item.debit === 0 && props.item.credit > 0 && !props.item.cancelled"
           class="white black--text"
           x-small
           @click="openPrintReceipt(props.item)"
