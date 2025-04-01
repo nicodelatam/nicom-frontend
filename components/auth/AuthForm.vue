@@ -182,7 +182,11 @@ export default {
               nit: company.nit || null,
               address: company.address || null,
               phone: company.phone || null,
-              email: company.email || null
+              email: company.email || null,
+              meta_endpoint: company.meta_endpoint,
+              meta_token: company.meta_token,
+              meta_template: company.meta_template,
+              meta_ticket_template: company.meta_ticket_template
             }
           })
           const userMenus = userResponse.menus.map((menu) => {
