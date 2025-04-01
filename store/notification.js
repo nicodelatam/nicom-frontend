@@ -43,6 +43,7 @@ export const mutations = {
 }
 export const actions = {
   sendWhatsapp ({ commit }, payload) {
+    console.log(payload)
     return new Promise((resolve, reject) => {
       fetch(payload.metaServicesInfo.meta_endpoint, {
         method: 'POST',
