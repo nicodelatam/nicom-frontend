@@ -54,7 +54,7 @@ export const actions = {
           {
             messaging_product: 'whatsapp',
             recipient_type: 'individual',
-            to: `57${payload.service.normalized_client.phone}`,
+            to: `57${payload.service.phone}`,
             type: 'template',
             template: {
               name: payload.metaServicesInfo.meta_template,

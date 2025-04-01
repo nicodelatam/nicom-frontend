@@ -41,16 +41,27 @@
               hide-details="auto"
               :value="limit"
             />
-            <v-btn
-              :disabled="!month || !year"
-              color="primary"
-              class="mt-2"
-              @click="continueToNextStep"
-            >
-              Continuar <v-icon class="ml-1">
-                mdi-arrow-right
-              </v-icon>
-            </v-btn>
+            <div class="d-flex flex-wrap mt-2 justify-center">
+              <v-btn
+                :disabled="!month || !year"
+                color="primary"
+                class="ma-1 flex-grow-1"
+                @click="continueToNextStep"
+              >
+                Generar Nuevas Facturas <v-icon class="ml-1">
+                  mdi-arrow-right
+                </v-icon>
+              </v-btn>
+              <v-btn
+                color="info"
+                class="ma-1 flex-grow-1"
+                @click="goToViewPage"
+              >
+                Revisar / Reenviar <v-icon class="ml-1">
+                  mdi-email-search-outline
+                </v-icon>
+              </v-btn>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -162,6 +173,12 @@ export default {
           clienttype: this.$route.query.clienttype,
           company: this.$route.query.company
         }
+      })
+    },
+    goToViewPage () {
+      this.$router.push({
+        path: '/billing/generate/view',
+        query: this.$route.query // Pass current context (city, clienttype, company)
       })
     },
     resetFields () {

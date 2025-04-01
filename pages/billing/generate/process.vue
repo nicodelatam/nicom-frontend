@@ -539,7 +539,7 @@ export default {
             sentCount++
 
             // Optional: Update invoice status in Strapi to mark as notified
-            // await this.updateInvoiceSentStatus(invoiceData.id, true);
+            await this.updateInvoiceWhatsappStatus(item.invoiceId, 'SENT')
           } else {
             // Inferring failure if success structure not matched
             const failureReason = whatsappResponse?.error?.message || 'Respuesta inválida o rechazada por API Meta.'
@@ -551,7 +551,7 @@ export default {
           item.messageSent = false
           errorCount++
           // Optional: Update invoice status in Strapi to mark as failed notification
-          // await this.updateInvoiceSentStatus(item.invoiceId, false, error.message);
+          await this.updateInvoiceWhatsappStatus(item.invoiceId, 'FAILED', error.message)
         }
       } // End of loop
 
@@ -559,6 +559,44 @@ export default {
       this.$toast.success(`Proceso de envío finalizado. Enviados OK: ${sentCount}, Errores: ${errorCount}.`, { duration: 4000 })
       // Update generation complete status again in case it affects display/buttons
       this.checkIfGenerationIsComplete()
+    },
+
+    // --- Method to Update Invoice Status in Strapi ---
+    async updateInvoiceWhatsappStatus (invoiceId, status, errorMessage = null) {
+      if (!invoiceId) {
+        console.error('Cannot update WhatsApp status: Invoice ID is missing.')
+        return
+      }
+
+      const payload = {
+        data: {
+          whatsapp_status: status,
+          whatsapp_attempted_at: new Date().toISOString(),
+          whatsapp_error_message: errorMessage
+        }
+      }
+
+      try {
+        const response = await fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices/${invoiceId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.$store.state.auth.token}`
+          },
+          body: JSON.stringify(payload)
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(`API Error (${response.status}): ${errorData.error?.message || 'Failed to update invoice status'}`)
+        }
+
+        this.$toast.info(`Estado WhatsApp actualizado a ${status} para Factura #${invoiceId}.`, { duration: 2000 }) // Shorter duration for status updates
+      } catch (error) {
+        console.error(`Error updating WhatsApp status for invoice ${invoiceId}:`, error)
+        this.$toast.error(`Error al actualizar estado WhatsApp Fac #${invoiceId}: ${error.message}`, { duration: 4000 })
+        // Decide if we need to retry this update or just log it
+      }
     },
 
     // --- API Call Helpers (Example: Fetch Meta Config) ---
