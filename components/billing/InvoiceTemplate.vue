@@ -6,18 +6,30 @@
           :src="this.$config.CDN_STRAPI_ENDPOINT + company.logo.url"
           :alt="company.short_name"
           class="company-logo"
-        />
+        >
       </div>
       <div class="company-info">
-        <h4 class="company-name">{{ company.short_name }}</h4>
-        <p class="mb-0">NIT: {{ company.nit }}</p>
-        <p class="mb-0">{{ company.address }}</p>
+        <h4 class="company-name">
+          {{ company.short_name }}
+        </h4>
+        <p class="mb-0">
+          NIT: {{ company.nit }}
+        </p>
+        <p class="mb-0">
+          {{ company.address }}
+        </p>
       </div>
       <div class="receipt-info">
         <div class="receipt-box">
-          <h5 class="receipt-title">FACTURA INDIVIDUAL</h5>
-          <h5 class="receipt-number">{{ invoice.id }}</h5>
-          <h5 class="receipt-code">CÓDIGO: {{ invoice.service.code }}</h5>
+          <h5 class="receipt-title">
+            FACTURA INDIVIDUAL
+          </h5>
+          <h5 class="receipt-number">
+            {{ invoice.id }}
+          </h5>
+          <h5 class="receipt-code">
+            CÓDIGO: {{ invoice.service.code }}
+          </h5>
         </div>
       </div>
     </div>
@@ -28,48 +40,84 @@
 
     <div class="user-data-grid">
       <div class="user-data-section">
-        <div class="data-label">NOMBRES Y APELLIDOS</div>
-        <div class="data-value">{{ invoice.service.client_name }}</div>
+        <div class="data-label">
+          NOMBRES Y APELLIDOS
+        </div>
+        <div class="data-value">
+          {{ invoice.service.client_name }}
+        </div>
       </div>
 
       <div class="user-data-section">
-        <div class="data-label">NO. DOCUMENTO</div>
-        <div class="data-value">{{ invoice.service.dni }}</div>
+        <div class="data-label">
+          NO. DOCUMENTO
+        </div>
+        <div class="data-value">
+          {{ invoice.service.dni }}
+        </div>
       </div>
 
       <div class="user-data-section">
-        <div class="data-label">SERVICIO</div>
-        <div class="data-value">{{ invoice.service.offer.name }}</div>
+        <div class="data-label">
+          SERVICIO
+        </div>
+        <div class="data-value">
+          {{ invoice.service.offer.name }}
+        </div>
       </div>
 
       <div class="user-data-section">
-        <div class="data-label">DIRECCIÓN DE DOMICILIO</div>
-        <div class="data-value">{{ invoice.service.address }}</div>
+        <div class="data-label">
+          DIRECCIÓN DE DOMICILIO
+        </div>
+        <div class="data-value">
+          {{ invoice.service.address }}
+        </div>
       </div>
 
       <div class="user-data-section">
-        <div class="data-label">BARRIO</div>
-        <div class="data-value">{{ invoice.service.neighborhood }}</div>
+        <div class="data-label">
+          BARRIO
+        </div>
+        <div class="data-value">
+          {{ invoice.service.neighborhood }}
+        </div>
       </div>
 
       <div class="user-data-section">
-        <div class="data-label">ID DEL USUARIO</div>
-        <div class="data-value">CÓDIGO: {{ invoice.service.code }}</div>
+        <div class="data-label">
+          ID DEL USUARIO
+        </div>
+        <div class="data-value">
+          CÓDIGO: {{ invoice.service.code }}
+        </div>
       </div>
 
       <div class="user-data-section">
-        <div class="data-label">CELULAR</div>
-        <div class="data-value">{{ invoice.service.phone }}</div>
+        <div class="data-label">
+          CELULAR
+        </div>
+        <div class="data-value">
+          {{ invoice.service.phone }}
+        </div>
       </div>
 
       <div class="user-data-section">
-        <div class="data-label">CORREO ELECTRÓNICO</div>
-        <div class="data-value">{{ invoice.service.normalized_client.email }}</div>
+        <div class="data-label">
+          CORREO ELECTRÓNICO
+        </div>
+        <div class="data-value">
+          {{ invoice.service.normalized_client.email }}
+        </div>
       </div>
 
       <div class="user-data-section">
-        <div class="data-label">PLAN CONTRATADO</div>
-        <div class="data-value">{{ invoice.service.offer.name }}</div>
+        <div class="data-label">
+          PLAN CONTRATADO
+        </div>
+        <div class="data-value">
+          {{ invoice.service.offer.name }}
+        </div>
       </div>
     </div>
 
