@@ -363,7 +363,7 @@ export default {
             year: invoiceData.year,
             token: this.token,
             metaServicesInfo,
-            imgPath: imageInfo && imageInfo[0] ? `${this.cdnEndpoint}${imageInfo[0].url}` : null
+            imgPath: imageInfo && imageInfo[0] ? imageInfo[0].url : null
           })
 
           // 3. Check Response and Update Status
