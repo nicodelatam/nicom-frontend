@@ -144,6 +144,10 @@ export default {
   methods: {
     async addAmount () {
       if (this.valid) {
+        if (!this.amount || !this.month || !this.year || !this.billtype) {
+          this.$toast.error('Completa todos los campos primero.', { duration: 5000 })
+          return
+        }
         this.loading = true
         const newInvoice = await this.$store.dispatch('billing/createInvoice', {
           balance: this.amount,
