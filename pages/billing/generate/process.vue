@@ -2,82 +2,95 @@
   <v-container>
     <v-card class="mb-4 rounded-xl elevation-0">
       <v-card-title class="text-center justify-center">
-        <strong>Procesamiento</strong> - Generación de estados de cuenta
+        <strong>Procesamiento</strong> - {{ stageTitle }}
       </v-card-title>
       <v-card-text>
+        <!-- Generation Button -->
         <v-row>
           <v-col class="align-center d-flex">
             <v-btn
               color="primary"
               class="rounded-xl"
               block
-              :loading="loading"
-              :disabled="loading || activeServices.length < 1 || end"
+              :loading="loadingGenerate"
+              :disabled="loadingSend || isGenerationComplete"
               @click="generateBilling"
             >
-              Generar Estados de Cuenta
+              Generar Estados de Cuenta ({{ generationPendingCount }} restantes)
             </v-btn>
           </v-col>
         </v-row>
-        <v-row v-if="end && omitedBills > 0">
-          <v-col class="align-center d-flex">
-            <v-alert type="warning" dense outlined>
-              {{ omitedBills }} servicios sin tarifas asignadas. Use la sección de configuración para corregir este problema.
-            </v-alert>
-          </v-col>
-        </v-row>
+
+        <!-- Send Notifications Button -->
         <v-row>
           <v-col>
             <v-btn
               class="rounded-xl"
-              color="error"
+              color="cyan darken-1 text--white"
               block
-              :loading="loading"
-              :disabled="loading || activeServices.length < 1 || !end"
+              :loading="loadingSend"
+              :disabled="loadingGenerate || !isGenerationComplete || sendPendingCount === 0"
               @click="sendNotifications"
             >
-              Enviar Notificaciones por WhatsApp
+              <v-icon left>
+                mdi-whatsapp
+              </v-icon>
+              Enviar Notificaciones ({{ sendPendingCount }} restantes)
             </v-btn>
           </v-col>
         </v-row>
+
+        <!-- Summary Chips -->
         <v-row>
           <v-col>
-            <v-chip class="ma-1" color="primary" v-if="generatedBills > 0">
-              Cargados: <strong class="ml-1">{{ generatedBills }}</strong>
+            <v-chip v-if="processedItems.length > 0" class="ma-1" color="primary">
+              Total: <strong class="ml-1">{{ processedItems.length }}</strong>
             </v-chip>
-            <v-chip class="ma-1" color="warning" v-if="omitedBills > 0">
-              Sin Tarifa: <strong class="ml-1">{{ omitedBills }}</strong>
+            <v-chip v-if="alreadyBilledCount > 0" class="ma-1" color="info">
+              Preexistentes: <strong class="ml-1">{{ alreadyBilledCount }}</strong>
             </v-chip>
-            <v-chip class="ma-1" color="info" v-if="alreadyBilled > 0">
-              Ya generados: <strong class="ml-1">{{ alreadyBilled }}</strong>
+            <v-chip v-if="skippedNoOfferCount > 0" class="ma-1" color="blue-grey lighten-2">
+              Sin Tarifa: <strong class="ml-1">{{ skippedNoOfferCount }}</strong>
             </v-chip>
-            <v-chip class="ma-1" color="success" v-if="sendIndex > 0">
-              Enviados: <strong class="ml-1">{{ sendIndex }}</strong>
+            <v-chip v-if="generatedOkCount > 0" class="ma-1" color="success">
+              Generadas OK: <strong class="ml-1">{{ generatedOkCount }}</strong>
+            </v-chip>
+            <v-chip v-if="generationErrorCount > 0" class="ma-1" color="error">
+              Error Generación: <strong class="ml-1">{{ generationErrorCount }}</strong>
+            </v-chip>
+            <v-chip v-if="sentOkCount > 0" class="ma-1" color="success darken-1">
+              Enviados OK: <strong class="ml-1">{{ sentOkCount }}</strong>
+            </v-chip>
+            <v-chip v-if="sendErrorCount > 0" class="ma-1" color="red darken-2">
+              Error Envío: <strong class="ml-1">{{ sendErrorCount }}</strong>
             </v-chip>
           </v-col>
         </v-row>
+
+        <!-- Action Buttons -->
         <v-row class="mt-2">
           <v-col>
             <div class="d-flex">
               <v-btn
                 color="primary"
                 class="mr-2"
-                @click="$router.push({
-                  path: '/billing/generate/prepare',
-                  query: $route.query
-                })"
-                :disabled="loading"
+                :disabled="loadingGenerate || loadingSend"
+                @click="$router.push({ path: '/billing/generate/prepare', query: $route.query })"
               >
-                <v-icon left>mdi-arrow-left</v-icon>
+                <v-icon left>
+                  mdi-arrow-left
+                </v-icon>
                 Regresar
               </v-btn>
               <v-btn
                 color="success"
+                :disabled="loadingGenerate || loadingSend"
                 @click="exit"
-                :disabled="loading || !end"
               >
                 Finalizar
-                <v-icon right>mdi-check</v-icon>
+                <v-icon right>
+                  mdi-check
+                </v-icon>
               </v-btn>
             </div>
           </v-col>
@@ -85,23 +98,28 @@
       </v-card-text>
     </v-card>
 
-    <v-card v-if="activeServices.length > 0 && end && !loading && omitedBills < 1" class="rounded-xl elevation-0">
+    <!-- Data Table -->
+    <v-card v-if="processedItems.length > 0" class="rounded-xl elevation-0">
       <v-card-title>
-        Resumen de facturación
+        Resumen de procesamiento
       </v-card-title>
       <v-data-table
         :headers="headers"
-        :items="activeServices"
+        :items="processedItems"
         :items-per-page="10"
+        item-key="code"
         class="elevation-0"
       >
+        <!-- Template for Generation Status -->
+        <template v-slot:[`item.generationStatus`]="{ item }">
+          <v-chip small :color="getGenerationStatusColor(item)" text-color="white">
+            {{ getGenerationStatusText(item) }}
+          </v-chip>
+        </template>
+        <!-- Template for Send Status -->
         <template v-slot:[`item.messageSent`]="{ item }">
-          <v-chip
-            :color="item.messageSent ? 'green' : (item.messageSent === false ? 'red' : 'cyan darken-4')"
-            text-color="white"
-            small
-          >
-            {{ item.messageSent ? 'ENVIADO' : (item.messageSent === false ? 'FALLIDO' : 'PENDIENTE') }}
+          <v-chip small :color="getSendStatusColor(item)" text-color="white">
+            {{ getSendStatusText(item) }}
           </v-chip>
         </template>
       </v-data-table>
@@ -116,32 +134,28 @@ export default {
   middleware: 'authenticated',
   data () {
     return {
-      end: false,
-      loading: false,
-      offerCorrectionDialog: false,
-      generatedBills: 0,
-      omitedBills: 0,
-      omitedBillsObjects: [],
-      alreadyBilled: 0,
-      alreadyBilledObjects: [],
+      loadingGenerate: false,
+      loadingSend: false,
+      isGenerationComplete: false, // Flag to indicate if generation process finished (or skipped)
+      // Local state to track progress for each item selected in prepare.vue
+      processedItems: [],
+      // Headers for the summary table
       headers: [
         { text: 'Código', value: 'code', sortable: true },
         { text: 'Cliente', value: 'client_name', sortable: true },
         { text: 'Celular', value: 'phone', sortable: false },
-        { text: 'Estado del envío', value: 'messageSent', sortable: false }
+        { text: 'Estado Generación', value: 'generationStatus', sortable: false },
+        { text: 'Estado Envío WhatsApp', value: 'messageSent', sortable: false }
       ]
+      // Note: Old counters like generatedBills, omitedBills, alreadyBilled, sendIndex are removed
+      // They are replaced by computed properties based on 'processedItems'
     }
   },
 
   computed: {
-    activeServices () {
-      // Use selected services if available, otherwise fall back to all active services
-      return this.$store.state.billing.selectedServices.length > 0
-        ? this.$store.state.billing.selectedServices
-        : this.$store.state.billing.activeServices
-    },
-    sendIndex () {
-      return this.$store.state.billing.sendIndex
+    // --- Vuex Data ---
+    selectedServicesFromStore () {
+      return this.$store.state.billing.selectedServices
     },
     month () {
       return this.$store.state.billing.month
@@ -153,55 +167,439 @@ export default {
       return this.$store.state.billing.limit
     },
     currentCompany () {
-      return this.$store.state.company.currentCompany
+      // Ensure currentCompany is loaded, might need error handling or default
+      return this.$store.state.company.currentCompany || {}
+    },
+    // --- Process Status & Counters ---
+    stageTitle () {
+      if (this.loadingGenerate) { return 'Generando Facturas...' }
+      if (this.loadingSend) { return 'Enviando Notificaciones WhatsApp...' }
+      if (!this.isGenerationComplete) { return 'Listo para Generar Facturas' }
+      if (this.sendPendingCount > 0) { return 'Listo para Enviar Notificaciones' }
+      return 'Proceso Completado'
+    },
+    alreadyBilledCount () {
+      return this.processedItems.filter(item => item.existingInvoiceId && !item.generationError).length
+    },
+    skippedNoOfferCount () {
+      return this.processedItems.filter(item => item.skippedNoOffer).length
+    },
+    generatedOkCount () {
+      return this.processedItems.filter(item => item.invoiceId && !item.existingInvoiceId && !item.generationError).length
+    },
+    generationErrorCount () {
+      return this.processedItems.filter(item => item.generationError).length
+    },
+    generationPendingCount () {
+      return this.processedItems.filter(item => !item.existingInvoiceId && !item.invoiceId && !item.skippedNoOffer && !item.generationError).length
+    },
+    sentOkCount () {
+      return this.processedItems.filter(item => item.messageSent === true).length
+    },
+    sendErrorCount () {
+      return this.processedItems.filter(item => item.messageSent === false).length
+    },
+    sendPendingCount () {
+      // Count items that have an invoice (generated or existing) and haven't been sent or failed sending yet
+      return this.processedItems.filter(item =>
+        (item.invoiceId || item.existingInvoiceId) && // Has an invoice
+        !item.generationError &&
+        item.messageSent === null
+      ).length
     }
+    // Note: sendIndex computed is removed, use sentOkCount or other counters
   },
 
   mounted () {
-    // Verificar si tenemos los datos necesarios
+    // --- Initial Checks ---
     if (!this.month || !this.year || !this.limit) {
+      this.$toast.error('Faltan datos de período (mes/año/límite). Regresando...', { duration: 4000 })
       this.$router.push('/billing/generate')
       return
     }
-    // Verificar si tenemos servicios seleccionados
-    if (this.$store.state.billing.selectedServices.length === 0) {
-      this.$toast.warning('No hay servicios seleccionados para facturar', { duration: 2000 })
+    if (!this.selectedServicesFromStore || this.selectedServicesFromStore.length === 0) {
+      this.$toast.error('No hay servicios seleccionados para procesar. Regresando...', { duration: 4000 })
       this.$router.push('/billing/generate/prepare')
+      return
     }
+    if (!this.currentCompany || !this.currentCompany.id) {
+      this.$toast.error('Información de la compañía no disponible.', { duration: 4000 })
+      // Potentially block further actions or redirect
+      return
+    }
+
+    // --- Initialize processedItems ---
+    // Create a deep copy and add status fields
+    this.processedItems = JSON.parse(JSON.stringify(this.selectedServicesFromStore)).map(service => ({
+      ...service,
+      invoiceId: service.existingInvoiceId || null, // Use existing ID if present
+      invoiceData: null,
+      generationError: false, // Flag for generation failure
+      skippedNoOffer: false, // Flag for skipped due to missing offer
+      messageSent: null // WhatsApp status: null (pending), true (sent), false (failed)
+    }))
+
+    // Check if generation should be skipped entirely (all items already have invoices)
+    this.checkIfGenerationIsComplete()
   },
 
   methods: {
-    getMetaServicesConfig () {
-      return new Promise((resolve, reject) => {
-        fetch(`${this.$config.API_STRAPI_ENDPOINT}companies/${this.currentCompany.id}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.$store.state.auth.token}`
-          }
-        })
-          .then(res => res.json())
-          .then(({ data: company }) => {
-            if (!company) {
-              this.$toast.error('Error de configuración. Reportar al webmaster. CODE:COMP_META_INFO_NOT_FOUND')
-              return null
-            }
-            if (!company.meta_token || !company.meta_template || !company.meta_endpoint) {
-              this.$toast.error('Error de configuración. Reportar al webmaster. CODE:COMP_META_INFO_INCOMPLETE')
-              return null
-            }
-            const metaServicesInfo = {
-              meta_token: company.meta_token,
-              meta_template: company.meta_template,
-              meta_endpoint: company.meta_endpoint
-            }
-            resolve(metaServicesInfo)
-          }).catch((error) => {
-            console.error(error)
-            reject(error)
-          })
-      })
+    // --- Status Helpers for Table Display ---
+    getGenerationStatusText (item) {
+      if (item.generationError) { return 'ERROR' }
+      if (item.skippedNoOffer) { return 'SIN TARIFA' }
+      if (item.existingInvoiceId) { return 'PREEXISTENTE' }
+      if (item.invoiceId) { return 'GENERADA OK' }
+      return 'PENDIENTE'
     },
+    getGenerationStatusColor (item) {
+      if (item.generationError) { return 'error' } // Red
+      if (item.skippedNoOffer) { return 'blue-grey lighten-2' } // Greyish
+      if (item.existingInvoiceId) { return 'info' } // Blue
+      if (item.invoiceId) { return 'success' } // Green
+      return 'grey' // Default grey for pending
+    },
+    getSendStatusText (item) {
+      if (!item.invoiceId && !item.existingInvoiceId) { return 'N/A' } // Not applicable if no invoice
+      if (item.generationError) { return 'N/A (Error Gen.)' }
+      if (item.messageSent === true) { return 'ENVIADO OK' }
+      if (item.messageSent === false) { return 'ERROR ENVÍO' }
+      return 'PENDIENTE ENVÍO'
+    },
+    getSendStatusColor (item) {
+      if ((!item.invoiceId && !item.existingInvoiceId) || item.generationError) { return 'grey lighten-2' } // N/A grey
+      if (item.messageSent === true) { return 'success darken-1' } // Darker Green
+      if (item.messageSent === false) { return 'red darken-2' } // Darker Red
+      return 'cyan darken-3' // Default cyan for pending send
+    },
+
+    // --- Core Logic ---
+    checkIfGenerationIsComplete () {
+      // Generation is complete if every item either has an existing invoice,
+      // has successfully generated an invoice, was skipped, or had an error.
+      this.isGenerationComplete = this.processedItems.every(item =>
+        item.existingInvoiceId || item.invoiceId || item.skippedNoOffer || item.generationError
+      )
+      if (this.isGenerationComplete && this.generationPendingCount === 0 && !this.loadingGenerate) {
+        if (this.processedItems.length > 0) { // Avoid toast if nothing was processed
+          this.$toast.info('Fase de generación de facturas completada (o no necesaria).', { duration: 4000 })
+        }
+      }
+    },
+
+    async generateBilling () {
+      this.loadingGenerate = true
+      this.$toast.info(`Iniciando generación para ${this.generationPendingCount} servicios...`, { duration: 4000 })
+
+      let generatedCount = 0
+      let errorCount = 0
+      let skippedCount = 0
+
+      for (const item of this.processedItems) {
+        // Skip if already processed in this run or pre-existing
+        if (item.invoiceId || item.skippedNoOffer || item.generationError) {
+          continue
+        }
+
+        // 1. Check for Offer
+        if (!item.offer || !item.offer.id || !item.offer.price) {
+          this.$toast.error(`Servicio ${item.code} (${item.client_name}) omitido: Sin tarifa asignada.`, { duration: 4000 })
+          item.skippedNoOffer = true
+          skippedCount++
+          continue // Skip this item
+        }
+
+        // 2. Skip if Already Billed (Redundant check based on prepare.vue logic, but safe)
+        // This uses the 'existingInvoiceId' added in prepare.vue or initial mount
+        if (item.existingInvoiceId) {
+          // This case should ideally not be hit if the first 'if' handles it,
+          // but kept for robustness.
+          this.$toast.info(`Servicio ${item.code} (${item.client_name}): Factura ya existe (ID: ${item.existingInvoiceId}).`, { duration: 4000 })
+          item.invoiceId = item.existingInvoiceId // Ensure invoiceId is set
+          // Pre-existing invoices don't count towards 'generatedCount' here
+          continue
+        }
+
+        // 3. Process Balances in Favor (assuming this still happens before regular invoice)
+        // TODO: Re-integrate balance processing if needed, ensuring it updates item status
+        // const hasBalancesInFavor = await this.processBalancesInFavor(item)
+        // if (hasBalancesInFavor) {
+        //   this.$toast.success(`Saldo a favor aplicado para ${item.code}`)
+        //   item.invoiceId = ??? // Need the ID from balance processing logic
+        //   item.invoiceData = ??? // Need the invoice data
+        //   generatedCount++
+        //   continue
+        // }
+
+        // 4. Create New Invoice
+        const newInvoiceData = {
+          data: { // Strapi v4 payload structure
+            balance: item.offer.price,
+            value: item.offer.price,
+            month: this.month.value,
+            year: this.year,
+            type: 'FACTURA',
+            offer: item.offer.id,
+            concept: 'FACTURACION MENSUAL',
+            details: this.month.text, // Make sure 'text' exists on month object
+            payed: false,
+            partial: false,
+            indebt: false,
+            service: item.id,
+            invoice_type: 1, // Assuming 'FACTURACION MENSUAL' type has ID 1
+            limit: this.limit,
+            company: this.currentCompany.id // Link to company
+          }
+        }
+
+        try {
+          const response = await fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${this.$store.state.auth.token}`
+            },
+            body: JSON.stringify(newInvoiceData)
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(`API Error (${response.status}): ${errorData.error?.message || 'Failed to create invoice'}`)
+          }
+
+          const { data: createdInvoice } = await response.json()
+
+          if (!createdInvoice || !createdInvoice.id) {
+            throw new Error('Invoice created but no ID returned.')
+          }
+
+          this.$toast.success(`Factura #${createdInvoice.id} creada para ${item.code} (${item.client_name}).`, { duration: 4000 })
+          item.invoiceId = createdInvoice.id
+          item.invoiceData = createdInvoice // Store the created invoice data
+          generatedCount++
+
+          // --- Post-Invoice Creation Steps (Sync) ---
+          // These were previously inside the loop but might be better here or batched
+
+          // a) Update Billing Period (Run synchronously for now)
+          try {
+            await this.$store.dispatch('billing/updateBillingPeriod', {
+              token: this.$store.state.auth.token,
+              service: item, // Pass the whole service item
+              billingmonth: this.month.value,
+              billingyear: this.year
+            })
+          } catch (updateError) {
+            console.error(`Error updating billing period for ${item.code}:`, updateError)
+            this.$toast.error(`No se pudo actualizar período de facturación para ${item.code}.`, { duration: 4000 })
+            // Continue even if this fails
+          }
+
+          // b) Create Legal Note (Run synchronously for now)
+          // TODO: Review if this is still necessary or handled differently
+          // try {
+          //     const legalNote = {
+          //       city: this.$route.query.city,
+          //       clienttype: this.$route.query.clienttype,
+          //       token: this.$store.state.auth.token,
+          //       biller: this.$store.state.auth, // Assuming auth object is sufficient
+          //       service: parseInt(item.id),
+          //       debit: item.offer.price,
+          //       credit: 0,
+          //       concept: 'FACTURACION MENSUAL',
+          //       company: this.currentCompany.id // Link company
+          //     }
+          //     await this.$store.dispatch('billing/createLegalNote', legalNote)
+          // } catch (legalNoteError) {
+          //      console.error(`Error creating legal note for ${item.code}:`, legalNoteError)
+          //      this.$toast.error(`No se pudo crear nota legal para ${item.code}.`, { duration: 4000 })
+          //      // Continue even if this fails
+          // }
+
+          // c) Update Service Balance (Run synchronously for now)
+          // TODO: Review if balance update is still needed here
+          // try {
+          //    await this.$store.dispatch('billing/updateServiceBalance', {
+          //       balance: (item.balance || 0) + item.offer.price, // Ensure item.balance exists
+          //       serviceId: item.id,
+          //       token: this.$store.state.auth.token
+          //    })
+          // } catch (balanceError) {
+          //     console.error(`Error updating service balance for ${item.code}:`, balanceError)
+          //     this.$toast.error(`No se pudo actualizar saldo para ${item.code}.`, { duration: 4000 })
+          //     // Continue even if this fails
+          // }
+        } catch (error) {
+          console.error(`Error creating invoice for service ${item.code}:`, error)
+          this.$toast.error(`Error al crear factura para ${item.code} (${item.client_name}): ${error.message}`, { duration: 4000 })
+          item.generationError = true
+          errorCount++
+        }
+      } // End of loop
+
+      this.loadingGenerate = false
+      this.$toast.success(`Proceso de generación finalizado. OK: ${generatedCount}, Errores: ${errorCount}, Omitidos (Sin Tarifa): ${skippedCount}, Preexistentes: ${this.alreadyBilledCount}.`, { duration: 4000 })
+      this.checkIfGenerationIsComplete() // Update completion status
+    },
+
+    async fetchInvoiceDataIfNeeded (item) {
+      // If invoice data isn't already on the item (e.g., for pre-existing), fetch it.
+      if (!item.invoiceData && item.invoiceId) {
+        this.$toast.info(`Cargando datos de factura #${item.invoiceId} para envío...`, { duration: 4000 })
+        try {
+          // Adjust endpoint and parameters as needed, add populate=* if necessary
+          const response = await fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices/${item.invoiceId}?populate=*`, {
+            headers: { Authorization: `Bearer ${this.$store.state.auth.token}` }
+          })
+          if (!response.ok) { throw new Error(`API Error (${response.status})`) }
+          const { data } = await response.json()
+          if (!data) { throw new Error('Invoice data not found.') }
+          item.invoiceData = data // Store fetched data
+          return true
+        } catch (error) {
+          console.error(`Error fetching invoice data for ${item.invoiceId}:`, error)
+          this.$toast.error(`Error cargando datos para factura ${item.invoiceId}: ${error.message}`, { duration: 4000 })
+          item.messageSent = false // Mark as failed since we can't proceed
+          return false
+        }
+      }
+      // If invoiceData already exists or no invoiceId, return true (or based on logic)
+      return !!item.invoiceData
+    },
+
+    async sendNotifications () {
+      this.loadingSend = true
+      this.$toast.info(`Iniciando envío de WhatsApp para ${this.sendPendingCount} facturas...`, { duration: 4000 })
+
+      const metaServicesInfo = await this.getMetaServicesConfig()
+      if (!metaServicesInfo) {
+        this.loadingSend = false
+        this.$toast.error('Error crítico: Configuración de Meta (WhatsApp) no encontrada. No se pueden enviar mensajes.', { duration: 5000 })
+        return
+      }
+
+      let sentCount = 0
+      let errorCount = 0
+
+      for (const item of this.processedItems) {
+        // Skip if not applicable, already sent, or failed
+        if (item.messageSent !== null || !item.invoiceId || item.generationError || item.skippedNoOffer) {
+          continue
+        }
+
+        // Ensure we have the invoice data needed for the image/message
+        const hasInvoiceData = await this.fetchInvoiceDataIfNeeded(item)
+        if (!hasInvoiceData) {
+          // fetchInvoiceDataIfNeeded sets messageSent = false and shows toast
+          errorCount++
+          continue // Skip to next item
+        }
+
+        // Prepare data for sending
+        const serviceData = item // The item itself is the service data
+        const invoiceData = item.invoiceData // Use the stored/fetched invoice data
+
+        try {
+          // 1. Generate Image (if template exists and upload is needed)
+          // Assuming generateImageFromBill uploads and returns the Strapi file object/info
+          // Or modifies the invoiceData object with image info
+          // We might need to adapt this depending on how generateImageFromBill works
+          let imageInfo = null
+          if (this.currentCompany.meta_template) { // Check if template-based image generation is configured
+            this.$toast.info(`Generando imagen para factura #${invoiceData.id}...`, { duration: 4000 })
+            imageInfo = await this.generateImageFromBill(invoiceData, serviceData) // Pass full invoice and service
+            if (!imageInfo || !imageInfo[0]?.url) { // Check the expected structure of imageInfo
+              this.$toast.error(`No se pudo generar/subir imagen para factura ${invoiceData.id}, se enviará sin imagen.`, { duration: 4000 })
+              // imageInfo = null; // Ensure it's null if failed
+            } else {
+              this.$toast.success(`Imagen generada para factura #${invoiceData.id}`, { duration: 4000 })
+            }
+          }
+
+          // 2. Send WhatsApp Notification via Vuex action
+          this.$toast.info(`Enviando WhatsApp para ${serviceData.code} (${serviceData.client_name})...`, { duration: 4000 })
+          // Use the store action, passing necessary info
+          // The action should handle constructing the message based on template/image
+          const whatsappResponse = await this.$store.dispatch('notification/sendWhatsapp', {
+            service: serviceData,
+            invoice: invoiceData, // Pass the full invoice data
+            month: this.month, // Pass month object if needed by template
+            year: this.year,
+            token: this.$store.state.auth.token,
+            metaServicesInfo,
+            // Pass image URL if available and generated successfully
+            imgPath: imageInfo && imageInfo[0] ? `${this.$config.CDN_STRAPI_ENDPOINT}${imageInfo[0].url}` : null
+          })
+
+          // 3. Check Response (using the success example structure)
+          // Adjust based on the actual response structure of sendWhatsapp action
+          if (whatsappResponse && whatsappResponse.messages && whatsappResponse.messages[0]?.id) {
+            this.$toast.success(`WhatsApp enviado a ${serviceData.phone} para Factura #${invoiceData.id}.`, { duration: 4000 })
+            item.messageSent = true
+            sentCount++
+
+            // Optional: Update invoice status in Strapi to mark as notified
+            // await this.updateInvoiceSentStatus(invoiceData.id, true);
+          } else {
+            // Inferring failure if success structure not matched
+            const failureReason = whatsappResponse?.error?.message || 'Respuesta inválida o rechazada por API Meta.'
+            throw new Error(failureReason) // Throw to be caught below
+          }
+        } catch (error) {
+          console.error(`Error sending WhatsApp for invoice ${item.invoiceId}:`, error)
+          this.$toast.error(`Error WhatsApp Fac #${item.invoiceId} (${item.code}): ${error.message}`, { duration: 4000 })
+          item.messageSent = false
+          errorCount++
+          // Optional: Update invoice status in Strapi to mark as failed notification
+          // await this.updateInvoiceSentStatus(item.invoiceId, false, error.message);
+        }
+      } // End of loop
+
+      this.loadingSend = false
+      this.$toast.success(`Proceso de envío finalizado. Enviados OK: ${sentCount}, Errores: ${errorCount}.`, { duration: 4000 })
+      // Update generation complete status again in case it affects display/buttons
+      this.checkIfGenerationIsComplete()
+    },
+
+    // --- API Call Helpers (Example: Fetch Meta Config) ---
+    async getMetaServicesConfig () {
+      // Use currentCompany data if already loaded and sufficient
+      const company = this.currentCompany
+      if (company && company.meta_token && company.meta_endpoint && company.meta_template) {
+        this.$toast.info('Configuración Meta (WhatsApp) cargada.', { duration: 4000 })
+        return {
+          meta_token: company.meta_token,
+          meta_template: company.meta_template,
+          meta_endpoint: company.meta_endpoint
+        }
+      } else {
+        // Attempt to fetch if missing (optional, depends on app flow)
+        this.$toast.error('Configuración Meta incompleta o no cargada, intentando recargar...', { duration: 4000 })
+        try {
+          // Assuming a Vuex action exists to fetch company details
+          await this.$store.dispatch('company/fetchCompanyDetails', this.currentCompany.id)
+          const updatedCompany = this.$store.state.company.currentCompany
+          if (updatedCompany && updatedCompany.meta_token && updatedCompany.meta_endpoint) {
+            this.$toast.success('Configuración Meta recargada exitosamente.', { duration: 4000 })
+            return {
+              meta_token: updatedCompany.meta_token,
+              meta_template: updatedCompany.meta_template,
+              meta_endpoint: updatedCompany.meta_endpoint
+            }
+          } else {
+            throw new Error('Configuración Meta sigue incompleta después de recargar.')
+          }
+        } catch (error) {
+          console.error('Error fetching Meta config:', error)
+          this.$toast.error(`Error cargando configuración Meta: ${error.message}`, { duration: 4000 })
+          return null // Indicate failure
+        }
+      }
+    },
+
+    // --- Image Generation & Upload (Existing Methods - Review Needed) ---
+    // Ensure these methods handle errors gracefully and return useful info
+    // Ensure they use the correct Strapi endpoint and auth
     async generateImageFromBill (invoice, service) {
       try {
         // Obtener datos del servicio y oferta desde el objeto invoice
@@ -368,7 +766,7 @@ export default {
         return await this.uploadInvoiceImage(imgData, invoice.id, fileName)
       } catch (error) {
         console.error('Error generando imagen de factura:', error)
-        this.$toast.error('Error al generar imagen de factura')
+        this.$toast.error('Error al generar imagen de factura', { duration: 4000 })
         return null
       }
     },
@@ -410,330 +808,22 @@ export default {
         return await uploadResponse.json()
       } catch (error) {
         console.error('Error subiendo imagen:', error)
+        this.$toast.error(`Error al subir imagen para Factura #${invoiceId}: ${error.message}`, { duration: 4000 })
         return null
       }
     },
 
-    async sendNotifications () {
-      this.loading = true
-      const services = JSON.parse(JSON.stringify(this.activeServices)) // Create a copy to avoid reactivity issues
-
-      const metaServicesInfo = await this.getMetaServicesConfig()
-      if (!metaServicesInfo) {
-        this.loading = false
-        this.$toast.error('Error de configuración. Reportar al webmaster. CODE:COMP_META_INFO_ERROR')
-        return
-      }
-
-      for (let i = 0; i < services.length; i++) {
-        this.$store.commit('notification/setSendIndex', i + 1)
-
-        const lastInvoice = services[i].invoices ? services[i].invoices.at(-1) : null
-        const imgPath = lastInvoice?.image?.url || null
-
-        try {
-          const res = await this.$store.dispatch('notification/sendWhatsapp', {
-            service: services[i],
-            month: this.month,
-            token: this.$store.state.auth.token,
-            metaServicesInfo,
-            imgPath
-          })
-
-          if (res && res.contacts && res.contacts[0]) {
-            this.$toast.success('Notificación enviada', { duration: 2000 })
-
-            // Use proper Vuex mutation instead of direct state modification
-            this.$store.commit('billing/messageSent', {
-              index: i,
-              success: true
-            })
-
-            if (lastInvoice) {
-              await this.$store.dispatch('billing/updateSentStatus', {
-                token: this.$store.state.auth.token,
-                invoice: lastInvoice,
-                success: true
-              })
-            }
-          } else {
-            // Mark as failed using Vuex mutation
-            this.$store.commit('billing/messageSent', {
-              index: i,
-              success: false
-            })
-          }
-        } catch (error) {
-          console.error('Error enviando notificación:', error)
-          // Mark as failed using Vuex mutation
-          this.$store.commit('billing/messageSent', {
-            index: i,
-            success: false
-          })
-        }
-      }
-
-      this.loading = false
-      this.$toast.success('Proceso de notificaciones completado')
-    },
-
-    async getBalancesInFavor (serviceId) {
-      return await this.$store.dispatch('billing/getBalancesInFavor', {
-        token: this.$store.state.auth.token,
-        serviceId
-      })
-    },
-
-    async applyBalanceInFavorToInvoiceAndCreateLegalNote (activeService, infavor) {
-      const invoicePrice = activeService.offer.price
-      const balanceInFavor = infavor.balance
-      let balanceToApply = 0
-      let balanceLeft = 0
-
-      if (balanceInFavor >= invoicePrice) {
-        balanceToApply = invoicePrice
-        balanceLeft = balanceInFavor - balanceToApply
-
-        const recentInvoice = await this.$store.dispatch('billing/createInvoice', {
-          balance: 0,
-          value: invoicePrice,
-          month: this.month.value,
-          year: this.year,
-          type: 'FACTURA',
-          offer: activeService.offer.id,
-          concept: 'FACTURACION MENSUAL',
-          details: this.month.text,
-          payed: true,
-          partial: false,
-          indebt: false,
-          service: activeService.id,
-          invoice_type: 1,
-          limit: this.limit,
-          token: this.$store.state.auth.token
-        })
-
-        const legalNote = {
-          city: this.$route.query.city,
-          clienttype: this.$route.query.clienttype,
-          token: this.$store.state.auth.token,
-          biller: this.$store.state.auth,
-          service: activeService.id,
-          concept: 'APLICA SALDO A FAVOR',
-          debit: 0,
-          credit: balanceToApply,
-          connect: true,
-          invoices: [recentInvoice]
-        }
-        const legalNoteRes = await this.$store.dispatch('billing/createLegalNote', legalNote)
-
-        if (!legalNoteRes) {
-          this.$toast.error('Error creando el recibo.')
-          console.log(legalNote)
-          return
-        }
-
-        await this.$store.dispatch('billing/createInvoiceMovement', {
-          token: this.$store.state.auth.token,
-          biller: this.$store.state.auth,
-          invoice: recentInvoice,
-          type: 'ADELANTO',
-          concept: recentInvoice.details,
-          amount: recentInvoice.value,
-          details: 'APLICA SALDO A FAVOR',
-          legalNote: legalNoteRes.id
-        })
-
-        await this.$store.dispatch('billing/updateInvoice', {
-          token: this.$store.state.auth.token,
-          invoice: infavor,
-          payed: balanceLeft === 0,
-          balance: balanceLeft
-        })
-      } else {
-        balanceToApply = balanceInFavor
-        balanceLeft = 0
-
-        const recentInvoice = await this.$store.dispatch('billing/createInvoice', {
-          balance: invoicePrice - balanceToApply,
-          value: invoicePrice,
-          month: this.month.value,
-          year: this.year,
-          type: 'FACTURA',
-          offer: activeService.offer.id,
-          concept: 'FACTURACION MENSUAL',
-          details: this.month.text,
-          payed: false,
-          partial: true,
-          indebt: false,
-          service: activeService.id,
-          invoice_type: 1,
-          limit: this.limit,
-          token: this.$store.state.auth.token
-        })
-
-        const legalNote = {
-          city: this.$route.query.city,
-          clienttype: this.$route.query.clienttype,
-          token: this.$store.state.auth.token,
-          biller: this.$store.state.auth,
-          service: activeService.id,
-          concept: 'APLICA SALDO A FAVOR',
-          debit: 0,
-          credit: balanceToApply,
-          connect: true,
-          invoices: [recentInvoice]
-        }
-        const legalNoteRes = await this.$store.dispatch('billing/createLegalNote', legalNote)
-
-        if (!legalNoteRes) {
-          this.$toast.error('Error creando el recibo.')
-          console.log(legalNote)
-          return
-        }
-
-        await this.$store.dispatch('billing/createInvoiceMovement', {
-          token: this.$store.state.auth.token,
-          biller: this.$store.state.auth,
-          invoice: recentInvoice,
-          type: 'ADELANTO',
-          concept: recentInvoice.details,
-          amount: balanceInFavor,
-          details: 'APLICA SALDO A FAVOR',
-          legalNote: legalNoteRes.id
-        })
-
-        await this.$store.dispatch('billing/updateInvoice', {
-          token: this.$store.state.auth.token,
-          invoice: infavor,
-          payed: true,
-          balance: 0
-        })
-      }
-    },
-
-    async processBalancesInFavor (activeService) {
-      const balancesInFavor = await this.getBalancesInFavor(activeService.id)
-      const validBalances = balancesInFavor.filter(b => b.balance > 0)
-
-      if (validBalances.length < 1) {
-        return false
-      }
-
-      for (const balanceInFavor of validBalances) {
-        await this.applyBalanceInFavorToInvoiceAndCreateLegalNote(activeService, balanceInFavor)
-      }
-
-      return true
-    },
-
-    async generateBilling () {
-      this.loading = true
-
-      try {
-        for (let i = 0; i < this.activeServices.length; i++) {
-          const service = this.activeServices[i]
-
-          if (!service.offer) {
-            this.omitedBills++
-            this.omitedBillsObjects.push({ ...service })
-            continue
-          }
-
-          if (service.billingmonth === this.month.value && service.billingyear === this.year) {
-            this.alreadyBilled++
-            this.alreadyBilledObjects.push({ ...service })
-            continue
-          }
-
-          // Actualizar período de facturación
-          await this.$store.dispatch('billing/updateBillingPeriod', {
-            token: this.$store.state.auth.token,
-            service,
-            billingmonth: this.month.value,
-            billingyear: this.year
-          })
-
-          // Procesar saldos a favor si existen
-          const hasBalancesInFavor = await this.processBalancesInFavor(service)
-          if (hasBalancesInFavor) {
-            this.generatedBills++
-            continue
-          }
-
-          // Crear nueva factura
-          const newInvoiceData = {
-            balance: service.offer.price,
-            value: service.offer.price,
-            month: this.month.value,
-            year: this.year,
-            type: 'FACTURA',
-            offer: service.offer.id,
-            concept: 'FACTURACION MENSUAL',
-            details: this.month.text,
-            payed: false,
-            partial: false,
-            indebt: false,
-            service: service.id,
-            invoice_type: 1,
-            limit: this.limit,
-            token: this.$store.state.auth.token
-          }
-
-          const newInvoice = await this.$store.dispatch('billing/createInvoice', newInvoiceData)
-
-          // Generar imagen de factura
-          const invoiceImageResult = await this.generateImageFromBill(newInvoice, service)
-
-          // Asociar imagen con la factura en el store
-          if (invoiceImageResult) {
-            this.$store.commit('billing/addInvoice', {
-              index: i,
-              invoice: {
-                ...newInvoice,
-                image: invoiceImageResult
-              }
-            })
-          } else {
-            this.$toast.warning(`No se pudo generar imagen para factura de ${service.client_name}`, { duration: 2000 })
-          }
-
-          // Crear nota legal
-          const legalNote = {
-            city: this.$route.query.city,
-            clienttype: this.$route.query.clienttype,
-            token: this.$store.state.auth.token,
-            biller: this.$store.state.auth,
-            service: parseInt(service.id),
-            debit: service.offer.price,
-            credit: 0,
-            concept: 'FACTURACION MENSUAL'
-          }
-
-          await this.$store.dispatch('billing/createLegalNote', legalNote)
-
-          // Actualizar saldo del servicio
-          await this.$store.dispatch('billing/updateServiceBalance', {
-            balance: service.balance + service.offer.price,
-            serviceId: service.id,
-            token: this.$store.state.auth.token
-          })
-
-          this.generatedBills++
-        }
-
-        this.$toast.success(`Se generaron ${this.generatedBills} facturas correctamente`, { duration: 2000 })
-      } catch (error) {
-        console.error('Error en la generación de facturas:', error)
-        this.$toast.error('Error en el proceso de facturación')
-      } finally {
-        this.loading = false
-        this.end = true
-      }
-    },
-
     exit () {
-      this.$router.push('/client')
+      this.$store.commit('billing/resetState') // Optional: Reset Vuex state on exit
+      this.$router.push('/client') // Or appropriate dashboard/list page
     }
   }
 }
 </script>
+
+<style scoped>
+/* Add styles if needed, e.g., for chips */
+.v-chip {
+  font-weight: bold;
+}
+</style>

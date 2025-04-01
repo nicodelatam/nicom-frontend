@@ -15,7 +15,9 @@
           <v-row align="center">
             <v-col cols="12" sm="8">
               <div>Cargando servicios activos para el mes de {{ getMonthName() }} {{ year }}...</div>
-              <div class="text-caption mt-1">Este proceso puede tardar unos momentos dependiendo de la cantidad de servicios.</div>
+              <div class="text-caption mt-1">
+                Este proceso puede tardar unos momentos dependiendo de la cantidad de servicios.
+              </div>
             </v-col>
             <v-col cols="12" sm="4" class="text-center">
               <v-progress-circular
@@ -65,7 +67,9 @@
               :disabled="loading || activeServices.length === 0"
               @click="selectAll(!allSelected)"
             >
-              <v-icon left>{{ allSelected ? 'mdi-checkbox-blank-outline' : 'mdi-checkbox-marked' }}</v-icon>
+              <v-icon left>
+                {{ allSelected ? 'mdi-checkbox-blank-outline' : 'mdi-checkbox-marked' }}
+              </v-icon>
               {{ allSelected ? 'Deseleccionar todos' : 'Seleccionar todos' }}
             </v-btn>
 
@@ -120,7 +124,9 @@
       >
         <template v-slot:[`item.offer.price`]="{ item }">
           <span v-if="item.offer">{{ formatCurrency(item.offer.price) }}</span>
-          <v-chip v-else color="red" small text-color="white">Sin Tarifa</v-chip>
+          <v-chip v-else color="red" small text-color="white">
+            Sin Tarifa
+          </v-chip>
         </template>
         <template v-slot:[`item.active`]="{ item }">
           <v-chip
@@ -129,6 +135,15 @@
             text-color="white"
           >
             {{ item.active ? 'Activo' : 'Inactivo' }}
+          </v-chip>
+        </template>
+        <template v-slot:[`item.invoiceStatus`]="{ item }">
+          <v-chip
+            :color="item.existingInvoiceId ? 'blue lighten-3' : 'green lighten-3'"
+            small
+            :text-color="item.existingInvoiceId ? 'blue darken-3' : 'green darken-3'"
+          >
+            <strong>{{ item.existingInvoiceId ? 'YA GENERADA' : 'POR GENERAR' }}</strong>
           </v-chip>
         </template>
         <template v-slot:footer>
@@ -158,7 +173,8 @@ export default {
         { text: 'Cliente', value: 'client_name', sortable: true },
         { text: 'Plan', value: 'offer.name', sortable: true },
         { text: 'Valor', value: 'offer.price', sortable: true },
-        { text: 'Estado', value: 'active', sortable: false }
+        { text: 'Estado Servicio', value: 'active', sortable: false },
+        { text: 'Estado Factura', value: 'invoiceStatus', sortable: false }
       ]
     }
   },
@@ -239,7 +255,7 @@ export default {
         })
       } catch (error) {
         console.error('Error cargando servicios:', error)
-        this.$toast.error('Error cargando servicios activos')
+        this.$toast.error('Error cargando servicios activos', { duration: 2000 })
       } finally {
         this.loading = false
       }
@@ -251,33 +267,31 @@ export default {
         : []
     },
 
-    updateSelection (event) {
-      // Este método se desencadena cuando se selecciona o deselecciona un item
-      // Store the selected services in Vuex if needed
-      this.$store.commit('billing/setSelectedServices', this.selectedServices)
+    updateSelection ({ item, value }) {
+      // Manually update selectedServices based on checkbox changes
+      // This is needed because v-data-table v-model might behave unexpectedly
+      // when items are dynamically updated or filtered.
+      const index = this.selectedServices.findIndex(s => s.code === item.code)
+      if (value && index === -1) {
+        // Add item if selected and not already in the array
+        this.selectedServices.push(item)
+      } else if (!value && index !== -1) {
+        // Remove item if deselected and present in the array
+        this.selectedServices.splice(index, 1)
+      }
+      // Ensure reactivity if needed, though direct push/splice is usually reactive
+      // this.selectedServices = [...this.selectedServices];
     },
 
     continueToProcess () {
-      if (this.selectedServices.length === 0) {
-        this.$toast.warning('Seleccione al menos un servicio para facturar')
-        return
-      }
-
       this.processingLoading = true
-
-      // Almacenar los servicios seleccionados en Vuex
+      // Commit the final list of selected services to the store
       this.$store.commit('billing/setSelectedServices', this.selectedServices)
-
       this.$router.push({
         path: '/billing/generate/process',
-        query: {
-          city: this.$route.query.city,
-          clienttype: this.$route.query.clienttype,
-          company: this.$route.query.company
-        }
-      }).finally(() => {
-        this.processingLoading = false
+        query: this.$route.query // Pass along query params
       })
+      // No need to set processingLoading back to false, as we are navigating away
     }
   }
 }
