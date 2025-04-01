@@ -24,6 +24,7 @@
       >
         <template v-slot:[`item.invoice_type.name`]="props">
           <v-chip
+            v-if="props.item.invoice_type"
             :color="props.item.balance > 0 ? props.item.cancelled ? 'red' : props.item.concept === 'ADELANTO' ? 'primary' : 'orange' : 'green'"
             text
             small
