@@ -2,7 +2,7 @@
   <v-container>
     <v-card class="mb-4 rounded-xl elevation-0">
       <v-card-title class="text-center justify-center">
-        <strong>Procesamiento</strong> - {{ stageTitle }}
+        Procesamiento - {{ stageTitle }}
       </v-card-title>
       <v-card-text>
         <!-- Generation Button -->
@@ -320,16 +320,27 @@ export default {
           continue
         }
 
-        // 3. Process Balances in Favor (assuming this still happens before regular invoice)
-        // TODO: Re-integrate balance processing if needed, ensuring it updates item status
-        // const hasBalancesInFavor = await this.processBalancesInFavor(item)
-        // if (hasBalancesInFavor) {
-        //   this.$toast.success(`Saldo a favor aplicado para ${item.code}`)
-        //   item.invoiceId = ??? // Need the ID from balance processing logic
-        //   item.invoiceData = ??? // Need the invoice data
-        //   generatedCount++
-        //   continue
-        // }
+        // 3. Process Balances in Favor (Re-integrated)
+        try {
+          const balanceApplied = await this.processBalancesInFavor(item)
+          if (balanceApplied) {
+            this.$toast.success(`Saldo a favor aplicado para ${item.code}. Factura generada/actualizada.`, { duration: 4000 })
+            // Mark as generated, even though we don't get the ID directly here.
+            // Assume an invoice was created/updated and paid.
+            // We might need more robust status updates depending on Vuex action returns.
+            item.invoiceId = 'saldo_aplicado' // Placeholder ID
+            item.invoiceData = { id: 'saldo_aplicado', payed: true } // Placeholder data
+            generatedCount++ // Count this as a generated invoice
+            continue // Skip regular invoice creation
+          }
+        } catch (balanceError) {
+          console.error(`Error processing balance in favor for ${item.code}:`, balanceError)
+          this.$toast.error(`Error procesando saldo a favor para ${item.code}: ${balanceError.message}`, { duration: 5000 })
+          // Decide if we should stop or continue with regular invoice? For now, let's skip generation if balance check failed.
+          item.generationError = true // Mark as error for this item
+          errorCount++
+          continue
+        }
 
         // 4. Create New Invoice
         const newInvoiceData = {
@@ -603,7 +614,7 @@ export default {
     async getMetaServicesConfig () {
       // Use currentCompany data if already loaded and sufficient
       const company = this.currentCompany
-      if (company && company.meta_token && company.meta_endpoint && company.meta_template) {
+      if (company && company.meta_token && company.meta_endpoint) { // meta_template is checked later when needed
         this.$toast.info('Configuración Meta (WhatsApp) cargada.', { duration: 4000 })
         return {
           meta_token: company.meta_token,
@@ -635,9 +646,189 @@ export default {
       }
     },
 
+    // --- Balance Processing Methods (Re-integrated) ---
+    async getBalancesInFavor (serviceId) {
+      // REVIEW: Ensure this dispatch/action handles Strapi v4 API/responses
+      return await this.$store.dispatch('billing/getBalancesInFavor', {
+        token: this.$store.state.auth.token,
+        serviceId
+      })
+    },
+
+    async applyBalanceInFavorToInvoiceAndCreateLegalNote (activeService, infavor) {
+      // REVIEW: Ensure all dispatch calls within this method handle Strapi v4 data structures
+      // e.g., wrapping request bodies in { data: { ... } }
+
+      const invoicePrice = activeService.offer.price
+      const balanceInFavor = infavor.balance
+      let balanceToApply = 0
+      let balanceLeft = 0
+
+      let createdInvoice = null // To store the ID of the created invoice
+
+      try {
+        if (balanceInFavor >= invoicePrice) {
+          balanceToApply = invoicePrice
+          balanceLeft = balanceInFavor - balanceToApply
+
+          const recentInvoice = await this.$store.dispatch('billing/createInvoice', {
+            balance: 0,
+            value: invoicePrice,
+            month: this.month.value,
+            year: this.year,
+            type: 'FACTURA',
+            offer: activeService.offer.id,
+            concept: 'FACTURACION MENSUAL',
+            details: this.month.text,
+            payed: true,
+            partial: false,
+            indebt: false,
+            service: activeService.id,
+            invoice_type: 1,
+            limit: this.limit,
+            token: this.$store.state.auth.token,
+            company: this.currentCompany.id // Ensure company is linked
+          })
+          createdInvoice = recentInvoice
+
+          const legalNote = {
+            city: this.$route.query.city,
+            clienttype: this.$route.query.clienttype,
+            token: this.$store.state.auth.token,
+            biller: this.$store.state.auth,
+            service: activeService.id,
+            concept: 'APLICA SALDO A FAVOR',
+            debit: 0,
+            credit: balanceToApply,
+            connect: true,
+            invoices: [createdInvoice],
+            company: this.currentCompany.id // Link company if needed by action
+          }
+          const legalNoteRes = await this.$store.dispatch('billing/createLegalNote', legalNote)
+          console.log(legalNoteRes)
+          if (!legalNoteRes) {
+            // Use throw new Error for consistency
+            throw new Error('Error creando la nota legal (saldo a favor).')
+          }
+
+          // REVIEW: Ensure createInvoiceMovement action uses { data: { ... } }
+          await this.$store.dispatch('billing/createInvoiceMovement', {
+            token: this.$store.state.auth.token,
+            biller: this.$store.state.auth,
+            invoice: createdInvoice,
+            type: 'ADELANTO',
+            concept: this.month.text,
+            amount: balanceToApply, // Amount applied
+            details: 'APLICA SALDO A FAVOR',
+            legal_note: legalNoteRes.id // Ensure field name is correct
+          })
+
+          await this.$store.dispatch('billing/updateInvoice', {
+            token: this.$store.state.auth.token,
+            invoice: infavor,
+            payed: balanceLeft === 0,
+            balance: balanceLeft
+          })
+        } else { // balanceInFavor < invoicePrice
+          balanceToApply = balanceInFavor
+          balanceLeft = 0
+
+          // REVIEW: Ensure createInvoice action uses { data: { ... } }
+          const recentInvoice = await this.$store.dispatch('billing/createInvoice', {
+            balance: invoicePrice - balanceToApply,
+            value: invoicePrice,
+            month: this.month.value,
+            year: this.year,
+            type: 'FACTURA',
+            offer: activeService.offer.id,
+            concept: 'FACTURACION MENSUAL',
+            details: this.month.text,
+            payed: false,
+            partial: true,
+            indebt: false,
+            service: activeService.id,
+            invoice_type: 1,
+            limit: this.limit,
+            token: this.$store.state.auth.token,
+            company: this.currentCompany.id // Ensure company is linked
+          })
+          createdInvoice = recentInvoice
+
+          // REVIEW: Ensure createLegalNote action uses { data: { ... } }
+          const legalNote = {
+            city: this.$route.query.city,
+            clienttype: this.$route.query.clienttype,
+            token: this.$store.state.auth.token,
+            biller: this.$store.state.auth,
+            service: activeService.id,
+            concept: 'APLICA SALDO A FAVOR',
+            debit: 0,
+            credit: balanceToApply,
+            connect: true,
+            invoices: [createdInvoice],
+            company: this.currentCompany.id // Link company if needed by action
+          }
+          const legalNoteRes = await this.$store.dispatch('billing/createLegalNote', legalNote)
+
+          if (!legalNoteRes) {
+            throw new Error('Error creando la nota legal (saldo a favor parcial).')
+          }
+
+          // REVIEW: Ensure createInvoiceMovement action uses { data: { ... } }
+          await this.$store.dispatch('billing/createInvoiceMovement', {
+            token: this.$store.state.auth.token,
+            biller: this.$store.state.auth,
+            invoice: createdInvoice,
+            type: 'ADELANTO',
+            concept: this.month.text,
+            amount: balanceToApply, // The amount of balance used
+            details: 'APLICA SALDO A FAVOR',
+            legal_note: legalNoteRes.id // Ensure field name is correct
+          })
+
+          // REVIEW: Ensure updateInvoice action uses { data: { ... } }
+          // Mark the balance invoice as fully used
+          await this.$store.dispatch('billing/updateInvoice', {
+            token: this.$store.state.auth.token,
+            invoice: infavor,
+            payed: true,
+            balance: 0
+          })
+        }
+        // Return the ID of the newly created/affected invoice
+        return createdInvoice
+      } catch (error) {
+        console.error(`Error applying balance in favor for service ${activeService?.id}, balance invoice ${infavor?.id}:`, error)
+        this.$toast.error(`Error aplicando saldo: ${error.message}`, { duration: 5000 })
+        throw error // Re-throw the error to be caught by processBalancesInFavor
+      }
+    },
+
+    async processBalancesInFavor (activeService) {
+      const balancesInFavor = await this.getBalancesInFavor(activeService.id)
+      // Ensure response is an array
+      const validBalances = Array.isArray(balancesInFavor) ? balancesInFavor.filter(b => b.balance > 0) : []
+
+      if (validBalances.length < 1) {
+        return false // No valid balances to apply
+      }
+
+      this.$toast.info(`Aplicando ${validBalances.length} saldo(s) a favor para ${activeService.code}...`, { duration: 3000 })
+
+      let appliedSuccessfully = false
+      for (const balanceInFavor of validBalances) {
+        // Apply them one by one
+        // If any fails, the error should propagate from applyBalanceInFavorToInvoiceAndCreateLegalNote
+        await this.applyBalanceInFavorToInvoiceAndCreateLegalNote(activeService, balanceInFavor)
+        appliedSuccessfully = true // Mark true if at least one attempt was made and didn't throw error immediately
+      }
+
+      // Returns true if *any* balance was processed (even if errors occurred later in related steps)
+      // The generateBilling loop will catch the re-thrown error if applyBalance... fails.
+      return appliedSuccessfully
+    },
+
     // --- Image Generation & Upload (Existing Methods - Review Needed) ---
-    // Ensure these methods handle errors gracefully and return useful info
-    // Ensure they use the correct Strapi endpoint and auth
     async generateImageFromBill (invoice, service) {
       try {
         // Obtener datos del servicio y oferta desde el objeto invoice

@@ -400,7 +400,7 @@ export const actions = {
       throw new Error(`UPDATE SERVICE BALANCE ACTION ${error}`)
     }
   },
-  createLegalNote ({ commit }, { token, invoices, debit, city, clienttype, credit, service, biller, concept, cancelled, cancelreason, connect = false }) {
+  createLegalNote ({ commit }, { token, invoices, debit, city, clienttype, credit, service, biller, concept, cancelled, cancelreason, connect = false, company }) {
     try {
       return new Promise((resolve, reject) => {
         fetch(`${this.$config.API_STRAPI_ENDPOINT}legal-notes`, {
@@ -422,7 +422,8 @@ export const actions = {
               concept,
               cancelled,
               cancelreason,
-              biller: biller.id
+              biller: biller.id,
+              company
             }
           })
         })
