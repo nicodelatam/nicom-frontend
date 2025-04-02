@@ -38,11 +38,12 @@ export default {
           services.push({
             id: ticket.service.id,
             name: ticket.service.normalized_client.name,
-            address: ticket.service.service_addresses,
-            addresses: ticket.service.service_addresses,
+            address: ticket.service.address,
+            neighborhood: ticket.service.neighborhood,
             phone: ticket.service.normalized_client.phone,
-            plan: ticket.service.plan,
+            offer: ticket.service.offer,
             technology: ticket.service.technology,
+            company: this.$store.state.company.currentCompany,
             stratum: ticket.service.stratum,
             tickettype: ticket.tickettype.name,
             createdAt: ticket.createdAt

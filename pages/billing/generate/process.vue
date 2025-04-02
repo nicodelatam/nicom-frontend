@@ -517,7 +517,6 @@ export default {
           // We might need to adapt this depending on how generateImageFromBill works
           let imageInfo = null
           if (this.currentCompany.meta_template) { // Check if template-based image generation is configured
-            this.$toast.info(`Generando imagen para factura #${invoiceData.id}...`, { duration: 4000 })
             imageInfo = await this.generateImageFromBill(invoiceData, serviceData) // Pass full invoice and service
             if (!imageInfo || !imageInfo[0]?.url) { // Check the expected structure of imageInfo
               this.$toast.error(`No se pudo generar/subir imagen para factura ${invoiceData.id}, se enviará sin imagen.`, { duration: 4000 })

@@ -4,224 +4,162 @@
     <v-container
       v-for="(clientInfo, index) in clientsInfo"
       :key="index"
+      class="service-document"
     >
-      <v-row>
-        <v-col cols="4" class="d-flex justify-start">
-          <MainLogoDark />
-        </v-col>
-        <v-col cols="6" class="d-flex align-end justify-center">
-          <h2>ENTREGA DE SERVICIO INTERNET</h2>
-        </v-col>
-        <v-col cols="2" class="d-flex align-end justify-center">
-          <h5>{{ getDate(clientInfo.createdAt) }}</h5>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="py-1">
-          <table class="tabla">
-            <tr>
-              <td style="border-right: 1px solid black; border-bottom: 1px solid black;">
-                CLIENTE:
-              </td>
-              <td style="border-bottom: 1px solid black; grid-column: span 6">
-                {{ clientInfo.name }}
-              </td>
-            </tr>
-            <tr>
-              <td style="border-right: 1px solid black; border-bottom: 1px solid black;">
-                DIRECCION:
-              </td>
-              <td style="border-bottom: 1px solid black; grid-column: span 6">
-                {{ clientInfo.addresses.at(-1).address }}
-              </td>
-            </tr>
-            <tr>
-              <td style="border-right: 1px solid black; border-bottom: 1px solid black;">
-                BARRIO:
-              </td>
-              <td style="border-bottom: 1px solid black; grid-column: span 6">
-                {{ clientInfo.addresses.at(-1).neighborhood.name }}
-              </td>
-            </tr>
-            <tr>
-              <td style="border-right: 1px solid black; border-bottom: 1px solid black;">
-                CELULAR:
-              </td>
-              <td style="grid-column: span 6">
-                {{ clientInfo.phone }}
-              </td>
-            </tr>
-            <tr>
-              <td style="border-right: 1px solid black; border-bottom: 1px solid black;">
-                ESTRATO:
-              </td>
-              <td style="border-top: 1px solid black; border-bottom: 1px solid black;grid-column: span 6;">
-                {{ clientInfo.stratum }}
-              </td>
-            </tr>
-            <tr>
-              <td style="border-right: 1px solid black; border-bottom: 1px solid black;">
-                INTERNET HOGAR:
-              </td>
-              <td style="border-bottom: 1px solid black; grid-column: span 6;">
-                {{ clientInfo.plan.name }}
-              </td>
-            </tr>
-            <tr>
-              <td>EQUIPO EN COMODATO</td>
-              <td style="border-left: 1px solid black; grid-column: span 6;">
-                {{ clientInfo.tickettype }}
-              </td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-            </tr>
-            <tr>
-              <td style="border-right: 1px solid black; border-top: 1px solid black; border-bottom: 1px solid black;">
-                TIPO:
-              </td>
-              <td style="border-top: 1px solid black; border-bottom: 1px solid black; grid-column: span 6;">
-                {{ clientInfo.technology.name }}
-              </td>
-            </tr>
-            <tr>
-              <td style="border-right: 1px solid black ;padding:5px;">
-                IDENTIFICACION MAC
-              </td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-            </tr>
-          </table>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="d-flex justify-center py-1 text-center">
-          <p>
-            Para garantizar la calidad en la prestacion del servicio, es necesario tener en cuenta las siguientes recomendaciones técnicas.
-          </p>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="d-flex justify-center py-1 text-center">
-          <strong>
-            RECOMENDACIONES TECNICAS
-          </strong>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="d-flex justify-center py-1 text-start">
-          <div>
-            <p>
-              1. No comparta su contraseña con nadie. (puede ser victima de fraude y/o robo de sus datos personales e informacion)
-            </p>
-            <p>
-              2. Evite desconectar o manipular cables y dispositivos.
-            </p>
-            <p>
-              3. No intente entrar al dispositivo (Router) por medio de la interfaz para cambiar contraseñas o protocolos establecidos por la empresa.
-            </p>
-            <p>
-              4. Desconecte la fuente electrica (cargador) del dispositivo (router) en caso de tormenta, para evitar que descargas electricas dañen el equipo.
-            </p>
+      <!-- Header Section -->
+      <div class="header-section">
+        <div class="logo-container">
+          <v-img
+            :src="$config.CDN_STRAPI_ENDPOINT + clientInfo.company.logo.url"
+            class="company-logo"
+          />
+        </div>
+        <div class="title-container">
+          <h2 class="document-title">
+            ENTREGA DE SERVICIO INTERNET
+          </h2>
+        </div>
+        <div class="date-container">
+          <h5 class="document-date">
+            {{ getDate(clientInfo.createdAt) }}
+          </h5>
+        </div>
+      </div>
+
+      <!-- Client Information Section -->
+      <div class="section-title">
+        INFORMACIÓN DEL CLIENTE
+      </div>
+
+      <div class="client-info-grid">
+        <div class="info-row">
+          <div class="info-label">
+            CLIENTE:
           </div>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="d-flex justify-center py-1 text-center">
-          <strong>
-            SEÑOR USUARIO COMUNIQUESE CON NUESTRA LINEA DE ATENCION Y SOLICITE UN SERVICIO TECNICO EN LOS SIGUIENTES CASOS:
-          </strong>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="d-flex justify-center py-1 text-start">
-          <div>
-            <p>
-              1. Si su servicio es por fibra optica y el dispositivo emite una luz de color rojo en el led LOS
-            </p>
-            <p>
-              2. Si por manipulacion o accidente el cable UTP o Fibra optica es cortada o presenta deterioro.
-            </p>
-            <p>
-              3. Si su servicio presenta lentitud en la navegacion. (no intente entrar al router)
-            </p>
-            <p>
-              4. Si su dispositivo no enciende
-            </p>
-            <p>
-              5. Si los dispositivos de su hogar tales como celulares, computadores no reconocen la red privada.
-            </p>
-            <p>
-              6. Si requiere cambiar de lugar su dispositivo. (Puede tener costo adicional)
-            </p>
-            <p>
-              7. Si necesita cambiar la contraseña.
-            </p>
+          <div class="info-value">
+            {{ clientInfo.name }}
           </div>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="d-flex justify-center py-1 text-center">
-          <strong>
-            Recuerde que la calidad del servicio depende tambien del cuidado y buen uso del dispositivo
-          </strong>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="d-flex justify-center py-1 text-center">
-          <strong>
-            LINEA DE ATENCION:
-          </strong>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="d-flex justify-center py-1 text-start">
-          <div>
-            <p>
-              MARIQUITA: 3153477652
-            </p>
-            <p>
-              FRESNO: 258 14 93   /  350 810 59 49
-            </p>
+        </div>
+        <div class="info-row">
+          <div class="info-label">
+            DIRECCION:
           </div>
-        </v-col>
-      </v-row>
-      <v-row class="mt-10">
-        <v-col class="d-flex justify-center py-1 text-start">
-          <div>
-            <v-row>
-              <v-col class="pa-0">
-                _____________________________________________
-              </v-col>
-            </v-row>
-            <v-row class="mt-1">
-              <v-col class="pa-0">
-                CLIENTE
-              </v-col>
-            </v-row>
+          <div class="info-value">
+            {{ clientInfo.address }}
           </div>
-        </v-col>
-        <v-col class="d-flex justify-center py-1 text-start">
-          <div>
-            <v-row>
-              <v-col class="pa-0">
-                ____________________________________________
-              </v-col>
-            </v-row>
-            <v-row class="mt-1">
-              <v-col class="pa-0">
-                TECNICO
-              </v-col>
-            </v-row>
+        </div>
+        <div class="info-row">
+          <div class="info-label">
+            BARRIO:
           </div>
-        </v-col>
-      </v-row>
+          <div class="info-value">
+            {{ clientInfo.neighborhood }}
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">
+            CELULAR:
+          </div>
+          <div class="info-value">
+            {{ clientInfo.phone }}
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">
+            ESTRATO:
+          </div>
+          <div class="info-value">
+            {{ clientInfo.stratum }}
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">
+            INTERNET HOGAR:
+          </div>
+          <div class="info-value">
+            {{ clientInfo.offer.plan.name }}
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">
+            EQUIPO EN COMODATO:
+          </div>
+          <div class="info-value">
+            {{ clientInfo.tickettype }}
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">
+            TIPO:
+          </div>
+          <div class="info-value">
+            {{ clientInfo.technology.name }}
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">
+            IDENTIFICACION MAC:
+          </div>
+          <div class="info-value"></div>
+        </div>
+      </div>
+
+      <!-- Technical Recommendations Section -->
+      <div class="intro-text text-center mt-4">
+        Para garantizar la calidad en la prestacion del servicio, es necesario tener en cuenta las siguientes recomendaciones técnicas.
+      </div>
+
+      <div class="section-title mt-4">
+        RECOMENDACIONES TECNICAS
+      </div>
+
+      <div class="recommendations-section">
+        <p>1. No comparta su contraseña con nadie. (puede ser victima de fraude y/o robo de sus datos personales e informacion)</p>
+        <p>2. Evite desconectar o manipular cables y dispositivos.</p>
+        <p>3. No intente entrar al dispositivo (Router) por medio de la interfaz para cambiar contraseñas o protocolos establecidos por la empresa.</p>
+        <p>4. Desconecte la fuente electrica (cargador) del dispositivo (router) en caso de tormenta, para evitar que descargas electricas dañen el equipo.</p>
+      </div>
+
+      <!-- Service Request Section -->
+      <div class="section-title mt-4">
+        LLAME LINEA DE ATENCION Y SOLICITE UN SERVICIO TECNICO EN LOS SIGUIENTES CASOS:
+      </div>
+
+      <div class="service-request-section">
+        <p>1. Si su servicio es por fibra optica y el dispositivo emite una luz de color rojo en el led LOS</p>
+        <p>2. Si por manipulacion o accidente el cable UTP o Fibra optica es cortada o presenta deterioro.</p>
+        <p>3. Si su servicio presenta lentitud en la navegacion. (no intente entrar al router)</p>
+        <p>4. Si su dispositivo no enciende</p>
+        <p>6. Si requiere cambiar de lugar su dispositivo. (Puede tener costo adicional)</p>
+        <p>7. Si necesita cambiar la contraseña.</p>
+      </div>
+
+      <!-- Reminder Section -->
+      <div class="reminder-text text-center mt-4">
+        <strong>Recuerde que la calidad del servicio depende tambien del cuidado y buen uso del dispositivo</strong>
+      </div>
+
+      <!-- Contact Information Section -->
+      <div class="section-title mt-4">
+        LINEA DE ATENCION: {{ clientInfo.company.phone }}
+      </div>
+
+      <!-- Signature Section -->
+      <div class="signature-section mt-5">
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div class="signature-label">
+            CLIENTE
+          </div>
+        </div>
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div class="signature-label">
+            TECNICO
+          </div>
+        </div>
+      </div>
+
       <div v-if="(index + 1) < clientsInfo.length" class="pagebreak"></div>
     </v-container>
   </div>
@@ -263,46 +201,162 @@ export default {
 </script>
 <style scoped>
 body {
-  background-color:white!important;
-}
-.tabla {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid black;
-  font-size: 16px!important;
-  line-height: 2rem!important;
+  background-color: white !important;
 }
 
-.tabla > tr {
-  display: grid !important;
-  grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr 1fr;
-  padding: 0px;
+.service-document {
+  max-width: 21cm;
+  margin: 0 auto;
+  font-family: 'Arial', sans-serif;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: white;
+  padding: 15px;
 }
-.tabla > tr > td {
-  padding-left: 5px;
+
+/* Header Section */
+.header-section {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
 }
-p {
-  font-size: 16px;
-  line-height: 1.5rem!important;
-  margin-bottom: 0 !important;
+
+.logo-container {
+  display: flex;
+  justify-content: center;
 }
-h2 {
-  font-size: 24px!important;
-  line-height: 1.5rem!important;
+
+.company-logo {
+  max-height: 80px;
+  max-width: 160px;
+  object-fit: contain;
 }
-strong {
-  font-size: 16px;
-  line-height: 1.5rem!important;
+
+.title-container {
+  text-align: center;
 }
+
+.document-title {
+  color: #333;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.date-container {
+  text-align: right;
+}
+
+.document-date {
+  color: #555;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Section Titles */
+.section-title {
+  background-color: rgb(0, 176, 240);
+  color: white;
+  font-weight: bold;
+  text-align: center;
+  padding: 6px;
+  margin: 15px 0 10px 0;
+  font-size: 0.9rem;
+  border-radius: 2px;
+}
+
+/* Client Information Grid */
+.client-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.info-row {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  background-color: #f9f9f9;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 4px 12px;
+  border-right: 1px solid #f0f0f0;
+}
+
+.info-value {
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
+/* Text Sections */
+.intro-text, .reminder-text {
+  font-size: 0.9rem;
+  padding: 0 15px;
+  color: #555;
+}
+
+/* Recommendation Sections */
+.recommendations-section, .service-request-section, .contact-section {
+  padding: 10px 15px;
+}
+
+.recommendations-section p, .service-request-section p, .contact-section p {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+/* Signature Section */
+.signature-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  padding: 15px;
+}
+
+.signature-block {
+  text-align: center;
+}
+
+.signature-line {
+  border-bottom: 1px solid #333;
+  margin-bottom: 5px;
+  padding-top: 40px;
+}
+
+.signature-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Print Styles */
 @media print {
-    .pagebreak {
-        page-break-after: always;
-        opacity: 0;
-    }
-    * {
+  .pagebreak {
+    page-break-after: always;
+    opacity: 0;
+  }
+  * {
     -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    @page { margin: 0; }
+    print-color-adjust: exact !important;
+  }
+  @page {
+    margin: 0.5cm;
+  }
+
+  .service-document {
+    border: none;
+    padding: 0;
+  }
 }
 </style>
