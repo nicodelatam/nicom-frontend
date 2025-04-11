@@ -45,6 +45,8 @@ export default {
             technology: ticket.service.technology,
             company: this.$store.state.company.currentCompany,
             stratum: ticket.service.stratum,
+            dni: ticket.service.dni,
+            email: ticket.service.normalized_client.email,
             tickettype: ticket.tickettype.name,
             createdAt: ticket.createdAt
           })
