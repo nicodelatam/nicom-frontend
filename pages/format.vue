@@ -16,13 +16,17 @@
         </div>
         <div class="title-container">
           <h2 class="document-title">
-            <v-icon color="#2c3e50" left>mdi-file-document-outline</v-icon>
+            <v-icon color="#2c3e50" left>
+              mdi-file-document-outline
+            </v-icon>
             ENTREGA DE SERVICIO
           </h2>
         </div>
         <div class="date-container">
           <h5 class="document-date">
-            <v-icon small color="#5d6975" class="mr-1">mdi-calendar</v-icon>
+            <v-icon small color="#5d6975" class="mr-1">
+              mdi-calendar
+            </v-icon>
             {{ getDate(clientInfo.createdAt) }}
           </h5>
         </div>
@@ -30,14 +34,18 @@
 
       <!-- Client Information Section -->
       <div class="section-title">
-        <v-icon color="white" class="mr-1">mdi-account</v-icon>
+        <v-icon color="white" class="mr-1">
+          mdi-account
+        </v-icon>
         <span>INFORMACIÓN DEL CLIENTE</span>
       </div>
 
       <div class="client-info-grid">
         <div class="info-item">
           <div class="info-label">
-            <v-icon x-small left color="#2c3e50">mdi-account</v-icon>
+            <v-icon x-small left color="#2c3e50">
+              mdi-account
+            </v-icon>
             CLIENTE:
           </div>
           <div class="info-value">
@@ -46,7 +54,9 @@
         </div>
         <div class="info-item">
           <div class="info-label">
-            <v-icon x-small left color="#2c3e50">mdi-map-marker</v-icon>
+            <v-icon x-small left color="#2c3e50">
+              mdi-map-marker
+            </v-icon>
             DIRECCION:
           </div>
           <div class="info-value">
@@ -55,7 +65,9 @@
         </div>
         <div class="info-item">
           <div class="info-label">
-            <v-icon x-small left color="#2c3e50">mdi-home-city</v-icon>
+            <v-icon x-small left color="#2c3e50">
+              mdi-home-city
+            </v-icon>
             BARRIO:
           </div>
           <div class="info-value">
@@ -64,7 +76,9 @@
         </div>
         <div class="info-item">
           <div class="info-label">
-            <v-icon x-small left color="#2c3e50">mdi-cellphone</v-icon>
+            <v-icon x-small left color="#2c3e50">
+              mdi-cellphone
+            </v-icon>
             CELULAR:
           </div>
           <div class="info-value">
@@ -73,7 +87,9 @@
         </div>
         <div class="info-item">
           <div class="info-label">
-            <v-icon x-small left color="#2c3e50">mdi-card-account-details</v-icon>
+            <v-icon x-small left color="#2c3e50">
+              mdi-card-account-details
+            </v-icon>
             CÉDULA / NIT:
           </div>
           <div class="info-value">
@@ -82,7 +98,9 @@
         </div>
         <div class="info-item">
           <div class="info-label">
-            <v-icon x-small left color="#2c3e50">mdi-package-variant</v-icon>
+            <v-icon x-small left color="#2c3e50">
+              mdi-package-variant
+            </v-icon>
             OFERTA CONTRATADA:
           </div>
           <div class="info-value">
@@ -91,7 +109,9 @@
         </div>
         <div class="info-item">
           <div class="info-label">
-            <v-icon x-small left color="#2c3e50">mdi-router-wireless</v-icon>
+            <v-icon x-small left color="#2c3e50">
+              mdi-router-wireless
+            </v-icon>
             EQUIPO EN COMODATO:
           </div>
           <div class="info-value">
@@ -100,7 +120,9 @@
         </div>
         <div class="info-item">
           <div class="info-label">
-            <v-icon x-small left color="#2c3e50">mdi-connection</v-icon>
+            <v-icon x-small left color="#2c3e50">
+              mdi-connection
+            </v-icon>
             TIPO:
           </div>
           <div class="info-value">
@@ -109,7 +131,9 @@
         </div>
         <div class="info-item">
           <div class="info-label">
-            <v-icon x-small left color="#2c3e50">mdi-email</v-icon>
+            <v-icon x-small left color="#2c3e50">
+              mdi-email
+            </v-icon>
             E-MAIL:
           </div>
           <div class="info-value">
@@ -120,61 +144,157 @@
 
       <!-- Terms and Conditions Section -->
       <div class="section-title mt-4">
-        <v-icon color="white" class="mr-1">mdi-file-document</v-icon>
+        <v-icon color="white" class="mr-1">
+          mdi-file-document
+        </v-icon>
         <span>CONDICIONES DEL SERVICIO</span>
       </div>
 
       <div class="conditions-section">
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-router-wireless</v-icon> 1. El equipo terminal (Router / ONT) es propiedad de {{ clientInfo.company.name }}</p>
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-hand-peace</v-icon> 2. El usuario se compromete a no manipular ni alterar los dispositivos y redes de conexión y ante cualquier interrupción deberá solicitar la visita técnica por parte de la empresa.</p>
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-account-hard-hat</v-icon> 3. El técnico instalador entregará al usuario afiliado el equipo terminal en modalidad de comodato. Dicho equipo y su estado correcto de funcionamiento dependerán de los cuidados que el usuario de al mismo.</p>
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-keyboard-return</v-icon> 4. El usuario deberá regresar el equipo en buenas condiciones en el momento de solicitar la desafiliación del servicio.</p>
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-shield-lock</v-icon> 5. El usuario autoriza a {{ clientInfo.company.name }} el tratamiento de sus datos personales, política que podrá encontrar a mayor detalle en la página web netplusinternet.net</p>
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-key-change</v-icon> 6. El cambio de contraseña deberá ser solicitada por el usuario a {{ clientInfo.company.name }} y dicho proceso se realizará en un lapso no superior a 3 días hábiles.</p>
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-home</v-icon> 7. El usuario deberá permitir al técnico instalador previamente identificado, el acceso a la vivienda en el momento de la instalación.</p>
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-cash</v-icon> 8. En el momento de la afiliación el usuario acepta el período de pago vigente en el momento.</p>
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-file-document-edit</v-icon> 9. El usuario podrá dar por finalizado este contrato en cualquier momento presentando una carta firmada solicitando la cancelación del servicio presentando una razón válida para el mismo.</p>
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-handshake</v-icon> 10. Este contrato es sin cláusula de permanencia; el usuario deberá solicitar la cancelación del servicio mediante una carta firmada especificando el motivo de retiro del servicio.</p>
-        <p><v-icon x-small color="#3d4852" class="mr-1">mdi-headset</v-icon> 11. El usuario podrá solicitar dentro del horario habitual su visita técnica en caso de no contar con el servicio.</p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-router-wireless
+          </v-icon> 1. El equipo terminal (Router / ONT) es propiedad de {{ clientInfo.company.name }}
+        </p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-hand-peace
+          </v-icon> 2. El usuario se compromete a no manipular ni alterar los dispositivos y redes de conexión y ante cualquier interrupción deberá solicitar la visita técnica por parte de la empresa.
+        </p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-account-hard-hat
+          </v-icon> 3. El técnico instalador entregará al usuario afiliado el equipo terminal en modalidad de comodato. Dicho equipo y su estado correcto de funcionamiento dependerán de los cuidados que el usuario de al mismo.
+        </p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-keyboard-return
+          </v-icon> 4. El usuario deberá regresar el equipo en buenas condiciones en el momento de solicitar la desafiliación del servicio.
+        </p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-shield-lock
+          </v-icon> 5. El usuario autoriza a {{ clientInfo.company.name }} el tratamiento de sus datos personales, política que podrá encontrar a mayor detalle en la página web netplusinternet.net
+        </p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-key-change
+          </v-icon> 6. El cambio de contraseña deberá ser solicitada por el usuario a {{ clientInfo.company.name }} y dicho proceso se realizará en un lapso no superior a 3 días hábiles.
+        </p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-home
+          </v-icon> 7. El usuario deberá permitir al técnico instalador previamente identificado, el acceso a la vivienda en el momento de la instalación.
+        </p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-cash
+          </v-icon> 8. En el momento de la afiliación el usuario acepta el período de pago vigente en el momento.
+        </p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-file-document-edit
+          </v-icon> 9. El usuario podrá dar por finalizado este contrato en cualquier momento presentando una carta firmada solicitando la cancelación del servicio presentando una razón válida para el mismo.
+        </p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-handshake
+          </v-icon> 10. Este contrato es sin cláusula de permanencia; el usuario deberá solicitar la cancelación del servicio mediante una carta firmada especificando el motivo de retiro del servicio.
+        </p>
+        <p>
+          <v-icon x-small color="#3d4852" class="mr-1">
+            mdi-headset
+          </v-icon> 11. El usuario podrá solicitar dentro del horario habitual su visita técnica en caso de no contar con el servicio.
+        </p>
       </div>
 
       <!-- Technical Recommendations Section -->
       <div class="section-title mt-4">
-        <v-icon color="white" class="mr-1">mdi-alert-circle</v-icon>
+        <v-icon color="white" class="mr-1">
+          mdi-alert-circle
+        </v-icon>
         <span>RECOMENDACIONES TÉCNICAS Y CASOS PARA SOLICITAR SERVICIO</span>
       </div>
 
       <div class="recommendations-grid">
         <div class="recommendations-column">
-          <p><v-icon color="#2c3e50" small class="mr-1">mdi-shield-alert</v-icon><strong>Recomendaciones:</strong></p>
+          <p>
+            <v-icon color="#2c3e50" small class="mr-1">
+              mdi-shield-alert
+            </v-icon><strong>Recomendaciones:</strong>
+          </p>
           <ul>
-            <li><v-icon x-small color="#3d4852" class="mr-1">mdi-lock</v-icon> No comparta su contraseña con nadie.</li>
-            <li><v-icon x-small color="#3d4852" class="mr-1">mdi-cable-data</v-icon> Evite desconectar o manipular cables y dispositivos.</li>
-            <li><v-icon x-small color="#3d4852" class="mr-1">mdi-cog</v-icon> No intente modificar configuraciones del Router.</li>
-            <li><v-icon x-small color="#3d4852" class="mr-1">mdi-weather-lightning</v-icon> Desconecte el dispositivo durante tormentas eléctricas.</li>
+            <li>
+              <v-icon x-small color="#3d4852" class="mr-1">
+                mdi-lock
+              </v-icon> No comparta su contraseña con nadie.
+            </li>
+            <li>
+              <v-icon x-small color="#3d4852" class="mr-1">
+                mdi-cable-data
+              </v-icon> Evite desconectar o manipular cables y dispositivos.
+            </li>
+            <li>
+              <v-icon x-small color="#3d4852" class="mr-1">
+                mdi-cog
+              </v-icon> No intente modificar configuraciones del Router.
+            </li>
+            <li>
+              <v-icon x-small color="#3d4852" class="mr-1">
+                mdi-weather-lightning
+              </v-icon> Desconecte el dispositivo durante tormentas eléctricas.
+            </li>
           </ul>
         </div>
         <div class="recommendations-column">
-          <p><v-icon color="#2c3e50" small class="mr-1">mdi-phone-in-talk</v-icon><strong>Solicite servicio técnico si:</strong></p>
+          <p>
+            <v-icon color="#2c3e50" small class="mr-1">
+              mdi-phone-in-talk
+            </v-icon><strong>Solicite servicio técnico si:</strong>
+          </p>
           <ul>
-            <li><v-icon x-small color="#3d4852" class="mr-1">mdi-led-off</v-icon> El dispositivo muestra luz roja en el led LOS.</li>
-            <li><v-icon x-small color="#3d4852" class="mr-1">mdi-ethernet-cable-off</v-icon> El cable está cortado o dañado.</li>
-            <li><v-icon x-small color="#3d4852" class="mr-1">mdi-speedometer-slow</v-icon> El servicio presenta lentitud en navegación.</li>
-            <li><v-icon x-small color="#3d4852" class="mr-1">mdi-power-plug-off</v-icon> El dispositivo no enciende o necesita cambiar de lugar.</li>
-            <li><v-icon x-small color="#3d4852" class="mr-1">mdi-form-textbox-password</v-icon> Necesita cambiar la contraseña.</li>
+            <li>
+              <v-icon x-small color="#3d4852" class="mr-1">
+                mdi-led-off
+              </v-icon> El dispositivo muestra luz roja en el led LOS.
+            </li>
+            <li>
+              <v-icon x-small color="#3d4852" class="mr-1">
+                mdi-ethernet-cable-off
+              </v-icon> El cable está cortado o dañado.
+            </li>
+            <li>
+              <v-icon x-small color="#3d4852" class="mr-1">
+                mdi-speedometer-slow
+              </v-icon> El servicio presenta lentitud en navegación.
+            </li>
+            <li>
+              <v-icon x-small color="#3d4852" class="mr-1">
+                mdi-power-plug-off
+              </v-icon> El dispositivo no enciende o necesita cambiar de lugar.
+            </li>
+            <li>
+              <v-icon x-small color="#3d4852" class="mr-1">
+                mdi-form-textbox-password
+              </v-icon> Necesita cambiar la contraseña.
+            </li>
           </ul>
         </div>
       </div>
 
       <!-- Reminder Section -->
       <div class="reminder-box mt-4">
-        <v-icon color="#1e5f8a" class="mr-1">mdi-information</v-icon>
+        <v-icon color="#1e5f8a" class="mr-1">
+          mdi-information
+        </v-icon>
         <strong>Recuerde que la calidad del servicio depende tambien del cuidado y buen uso del dispositivo</strong>
       </div>
 
       <!-- Contact Information Section -->
       <div class="contact-section mt-4">
-        <v-icon color="white" class="mr-2">mdi-phone</v-icon>
+        <v-icon color="white" class="mr-2">
+          mdi-phone
+        </v-icon>
         <div class="contact-label">
           LÍNEA DE ATENCIÓN:
         </div>
@@ -188,14 +308,18 @@
         <div class="signature-block">
           <div class="signature-line"></div>
           <div class="signature-label">
-            <v-icon x-small color="#2c3e50" class="mr-1">mdi-account-edit</v-icon>
+            <v-icon x-small color="#2c3e50" class="mr-1">
+              mdi-account-edit
+            </v-icon>
             CLIENTE
           </div>
         </div>
         <div class="signature-block">
           <div class="signature-line"></div>
           <div class="signature-label">
-            <v-icon x-small color="#2c3e50" class="mr-1">mdi-account-hard-hat</v-icon>
+            <v-icon x-small color="#2c3e50" class="mr-1">
+              mdi-account-hard-hat
+            </v-icon>
             TECNICO
           </div>
         </div>
