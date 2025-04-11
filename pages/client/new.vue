@@ -1,58 +1,76 @@
 <template>
   <v-container>
-    <v-card class="rounded-xl mx-auto elevation-0" max-width="1024">
+    <v-card class="rounded-xl mx-auto" max-width="1200">
       <v-card-title class="justify-center">
-        Afiliación de Cliente | Proceso
+        Afiliación de Cliente | Proceso Simplificado
       </v-card-title>
-      <v-stepper v-model="e1" class="transparent elevation-0">
+      <v-divider class="mb-5" />
+
+      <v-stepper v-model="currentStep" class="transparent elevation-0">
         <v-stepper-header>
-          <!-- <v-stepper-step
-            :complete="e1 > 1"
-            step="1"
-          >
-            Disponibilidad de WhatsApp
-          </v-stepper-step>
-
-          <v-divider /> -->
-
           <v-stepper-step
-            :complete="e1 > 1"
+            :complete="currentStep > 1"
             step="1"
           >
-            Numero celular
+            Datos del Cliente
           </v-stepper-step>
           <v-divider />
 
-          <v-stepper-step step="2">
-            Verificacion de Numero
+          <v-stepper-step
+            step="2"
+            :editable="clientCreated"
+          >
+            Configuración del Servicio
           </v-stepper-step>
         </v-stepper-header>
 
         <v-stepper-items>
-          <!-- <v-stepper-content step="1">
-            <CreateTypeDisponibility />
-          </v-stepper-content> -->
-
           <v-stepper-content step="1">
-            <CreateSendVerification />
+            <v-card class="mb-5" flat>
+              <ClientForm
+                ref="clientForm"
+                :client-phone="clientPhone"
+                @client-created="onClientCreated"
+              />
+            </v-card>
           </v-stepper-content>
 
           <v-stepper-content step="2">
-            <CreateVerification />
+            <v-card flat>
+              <CreateService
+                v-if="clientCreated"
+                :client-data="clientData"
+              />
+            </v-card>
           </v-stepper-content>
         </v-stepper-items>
       </v-stepper>
     </v-card>
   </v-container>
 </template>
+
 <script>
+import ClientForm from '~/components/create/Form.vue'
+import CreateService from '~/components/create/CreateService.vue'
+
 export default {
-  computed: {
-    e1 () {
-      return this.$store.state.create.e1
-    },
-    hasWhatsapp () {
-      return this.$store.state.create.hasWhatsapp
+  components: {
+    ClientForm,
+    CreateService
+  },
+  data () {
+    return {
+      currentStep: 1,
+      clientCreated: false,
+      clientData: null,
+      clientPhone: ''
+    }
+  },
+  methods: {
+    onClientCreated (clientData) {
+      this.clientData = clientData
+      this.clientCreated = true
+      this.currentStep = 2
     }
   }
 }

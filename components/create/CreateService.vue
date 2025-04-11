@@ -1,11 +1,11 @@
 <template>
   <v-container fluid>
-    <v-card v-if="$route.query.client" class="rounded-xl">
+    <v-card v-if="clientData" class="rounded-xl">
       <v-card-title>
         <v-icon class="mr-2">
           mdi-account
         </v-icon>
-        Crear Servicio para {{ $route.query.name }}
+        Crear Servicio para {{ clientData.name }}
       </v-card-title>
       <v-divider class="mb-5" />
       <v-card-text v-if="selectedCity && selectedClienttype">
@@ -324,9 +324,9 @@
 export default {
   name: 'CreateForm',
   props: {
-    clientnumber: {
-      type: String,
-      default: ''
+    clientData: {
+      type: Object,
+      default: null
     }
   },
   data: () => {
@@ -461,10 +461,16 @@ export default {
     this.$store.dispatch('telegram/getTelegramBotsFromDatabase', { token: this.$store.state.auth.token })
     this.$store.dispatch('neighborhood/getNeighborhoodsFromDatabase')
     this.$store.dispatch('technology/getTechnologiesFromDatabase')
-    this.Client.phone = this.clientnumber
-    this.Client.name = this.$route.query.name
-    this.generateCode()
-    this.getOffers()
+
+    if (this.clientData) {
+      this.Client.name = this.clientData.name
+      this.generateCode()
+      this.getOffers()
+    }
+
+    setTimeout(() => {
+      this.calculateSsid()
+    }, 1000)
   },
   methods: {
     resetAddress () {
@@ -603,12 +609,12 @@ export default {
         ipmodel: 0,
         active: true,
         indebt: false,
-        normalized_client: parseInt(this.$route.query.client),
+        normalized_client: this.clientData.id,
         address: this.address,
         neighborhood: this.Client.neighborhood.name,
-        client_name: this.$route.query.name,
-        dni: this.$route.query.dni,
-        phone: this.$route.query.phone,
+        client_name: this.clientData.name,
+        dni: this.clientData.dni,
+        phone: this.clientData.phone,
         balance: this.Client.affiliation ? this.Client.offer.affiliation_price : 0
       }
       await fetch(`${this.$config.API_STRAPI_ENDPOINT}services`, {
@@ -653,7 +659,7 @@ export default {
             this.createInvoiceMovement(service.id, this.Client.costofdays, 'COBRO DIAS DEL MES')
           }
           // this.$simpleTelegramCreate({ client: this.Client, address: this.address, neighborhood: this.Client.neighborhood, operator: this.$store.state.auth.username, telegramBots: this.telegramBots })
-          this.$router.push({ path: `/client/${this.$route.query.client}?city=${this.selectedCity.name}&clienttype=${this.selectedClienttype.name}` })
+          this.$router.push({ path: `/client/${this.clientData.id}?city=${this.selectedCity.name}&clienttype=${this.selectedClienttype.name}` })
           this.isSubmitting = false
         }).catch((error) => {
           this.$toast.error(`Ha ocurrido un error creando el servicio ${error}`, { duration: 5000 })

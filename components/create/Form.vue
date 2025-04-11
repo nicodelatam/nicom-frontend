@@ -31,6 +31,7 @@
               outlined
               dense
               :error="codeError"
+              :success="codeSuccess"
               :hint="d00pHint"
               :persistent-hint="codeError"
               :hide-details="hideD00pHint"
@@ -77,6 +78,22 @@
             />
           </v-col>
         </v-row>
+        <v-row>
+          <v-col>
+            <v-select
+              v-model="Client.company"
+              :items="[currentCompany]"
+              label="Compañia"
+              item-value="id"
+              item-text="name"
+              required
+              outlined
+              return-object
+              dense
+              hide-details
+            />
+          </v-col>
+        </v-row>
         <v-btn
           class="mr-4 mt-4"
           color="primary"
@@ -95,9 +112,9 @@
 export default {
   name: 'CreateForm',
   props: {
-    clientnumber: {
+    clientPhone: {
       type: String,
-      required: true
+      default: ''
     }
   },
   data: () => {
@@ -108,7 +125,8 @@ export default {
         name: '',
         dni: '',
         phone: '',
-        email: null
+        email: null,
+        company: null
       },
       alertBox: false,
       alertBoxColor: '',
@@ -125,13 +143,23 @@ export default {
         }
       ],
       codeError: false,
-      hideD00pHint: false,
+      hideD00pHint: true,
       d00pHint: '',
       codeSuccess: null
     }
   },
+  computed: {
+    currentCompany () {
+      return this.$store.state.company.currentCompany
+    }
+  },
   mounted () {
-    this.Client.phone = this.clientnumber
+    if (this.clientPhone) {
+      this.Client.phone = this.clientPhone
+    }
+    setTimeout(() => {
+      this.Client.company = this.$store.state.company.currentCompany
+    }, 1000)
   },
   methods: {
     duplicateDni (dni) {
@@ -161,11 +189,11 @@ export default {
               this.d00pHint = 'Ya existe un cliente con esta cedula.'
               this.codeError = true
               this.hideD00pHint = false
-              reject(Error('Ya existe un cliente con esta cedula.'))
             } else {
               this.valid = true
               this.codeError = false
               this.hideD00pHint = true
+              this.codeSuccess = true
               resolve(false)
             }
           }).catch((error) => {
@@ -182,7 +210,7 @@ export default {
         return
       }
       if (
-        this.Client.name === '' || this.Client.dni === '' || this.Client.phone === '' || this.Client.email === null
+        this.Client.name === '' || this.Client.dni === '' || this.Client.phone === '' || this.Client.email === null || this.Client.company === null
       ) {
         this.$toast.error('Por favor, complete todos los campos.')
         this.isSubmitting = false
@@ -201,8 +229,14 @@ export default {
         .then(res => res.json())
         .then(({ data: client }) => {
           this.isSubmitting = false
-          this.$router.push({ path: `/client/${client.id}` })
-          this.$store.commit('create/sete1', 1)
+          // Instead of routing directly, emit an event with the created client data
+          this.$emit('client-created', {
+            id: client.id,
+            name: this.Client.name,
+            dni: this.Client.dni,
+            phone: this.Client.phone,
+            email: this.Client.email
+          })
         }).catch((error) => {
           this.$toast.error(`Ha ocurrido un error ${error}`, { duration: 5000 })
           this.isSubmitting = false
