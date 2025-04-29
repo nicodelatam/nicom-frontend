@@ -39,6 +39,7 @@ export default {
             id: ticket.service.id,
             name: ticket.service.normalized_client.name,
             address: ticket.service.address,
+            code: ticket.service.code,
             neighborhood: ticket.service.neighborhood,
             phone: ticket.service.normalized_client.phone,
             offer: ticket.service.offer,

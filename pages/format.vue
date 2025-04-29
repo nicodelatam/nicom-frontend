@@ -123,10 +123,10 @@
             <v-icon x-small left color="#2c3e50">
               mdi-connection
             </v-icon>
-            TIPO:
+            CODIGO:
           </div>
           <div class="info-value">
-            {{ clientInfo.technology.name }}
+            {{ clientInfo.code }}
           </div>
         </div>
         <div class="info-item">
@@ -150,62 +150,92 @@
         <span>CONDICIONES DEL SERVICIO</span>
       </div>
 
-      <div class="conditions-section">
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-router-wireless
-          </v-icon> 1. El equipo terminal (Router / ONT) es propiedad de {{ clientInfo.company.name }}
-        </p>
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-hand-peace
-          </v-icon> 2. El usuario se compromete a no manipular ni alterar los dispositivos y redes de conexión y ante cualquier interrupción deberá solicitar la visita técnica por parte de la empresa.
-        </p>
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-account-hard-hat
-          </v-icon> 3. El técnico instalador entregará al usuario afiliado el equipo terminal en modalidad de comodato. Dicho equipo y su estado correcto de funcionamiento dependerán de los cuidados que el usuario de al mismo.
-        </p>
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-keyboard-return
-          </v-icon> 4. El usuario deberá regresar el equipo en buenas condiciones en el momento de solicitar la desafiliación del servicio.
-        </p>
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-shield-lock
-          </v-icon> 5. El usuario autoriza a {{ clientInfo.company.name }} el tratamiento de sus datos personales, política que podrá encontrar a mayor detalle en la página web netplusinternet.net
-        </p>
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-key-change
-          </v-icon> 6. El cambio de contraseña deberá ser solicitada por el usuario a {{ clientInfo.company.name }} y dicho proceso se realizará en un lapso no superior a 3 días hábiles.
-        </p>
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-home
-          </v-icon> 7. El usuario deberá permitir al técnico instalador previamente identificado, el acceso a la vivienda en el momento de la instalación.
-        </p>
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-cash
-          </v-icon> 8. En el momento de la afiliación el usuario acepta el período de pago vigente en el momento.
-        </p>
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-file-document-edit
-          </v-icon> 9. El usuario podrá dar por finalizado este contrato en cualquier momento presentando una carta firmada solicitando la cancelación del servicio presentando una razón válida para el mismo.
-        </p>
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-handshake
-          </v-icon> 10. Este contrato es sin cláusula de permanencia; el usuario deberá solicitar la cancelación del servicio mediante una carta firmada especificando el motivo de retiro del servicio.
-        </p>
-        <p>
-          <v-icon x-small color="#3d4852" class="mr-1">
-            mdi-headset
-          </v-icon> 11. El usuario podrá solicitar dentro del horario habitual su visita técnica en caso de no contar con el servicio.
-        </p>
+      <div class="conditions-survey-grid">
+        <!-- Columna de Condiciones -->
+        <div class="conditions-section">
+          <p>
+            <v-icon x-small color="#3d4852" class="mr-1">
+              mdi-router-wireless
+            </v-icon> 1. El equipo terminal es propiedad de {{ clientInfo.company.name }}.
+          </p>
+          <p>
+            <v-icon x-small color="#3d4852" class="mr-1">
+              mdi-hand-peace
+            </v-icon> 2. No manipule dispositivos ni redes; solicite soporte técnico si hay fallas.
+          </p>
+          <p>
+            <v-icon x-small color="#3d4852" class="mr-1">
+              mdi-account-hard-hat
+            </v-icon> 3. El técnico entrega el equipo en comodato; su buen estado depende del usuario.
+          </p>
+          <p>
+            <v-icon x-small color="#3d4852" class="mr-1">
+              mdi-keyboard-return
+            </v-icon> 4. Devuelva el equipo en buen estado al cancelar el servicio.
+          </p>
+          <p>
+            <v-icon x-small color="#3d4852" class="mr-1">
+              mdi-shield-lock
+            </v-icon> 5. Autoriza a {{ clientInfo.company.name }} a tratar sus datos personales (ver política en la web).
+          </p>
+          <p>
+            <v-icon x-small color="#3d4852" class="mr-1">
+              mdi-key-change
+            </v-icon> 6. El cambio de contraseña se solicita a la empresa y se realiza en máximo 3 días hábiles.
+          </p>
+          <p>
+            <v-icon x-small color="#3d4852" class="mr-1">
+              mdi-home
+            </v-icon> 7. Permita el acceso al técnico identificado durante la instalación.
+          </p>
+          <p>
+            <v-icon x-small color="#3d4852" class="mr-1">
+              mdi-cash
+            </v-icon> 8. Al afiliarse, acepta el período de pago vigente.
+          </p>
+          <p>
+            <v-icon x-small color="#3d4852" class="mr-1">
+              mdi-file-document-edit
+            </v-icon> 9. Puede cancelar el contrato en cualquier momento con carta firmada y motivo.
+          </p>
+          <p>
+            <v-icon x-small color="#3d4852" class="mr-1">
+              mdi-handshake
+            </v-icon> 10. Sin cláusula de permanencia; solicite cancelación con carta y motivo.
+          </p>
+        </div>
+        <!-- Columna de Encuesta -->
+        <div class="survey-section">
+          <div class="survey-title">
+            <v-icon color="#1976d2" left>
+              mdi-checkbox-marked-circle-outline
+            </v-icon>
+            ENCUESTA: ¿Cómo nos conoció?
+          </div>
+          <div class="survey-options">
+            <div class="survey-option">
+              <input id="redes-sociales" type="checkbox" />
+              <span class="survey-checkbox-space"></span>
+              <label for="redes-sociales">Redes sociales</label>
+            </div>
+            <div class="survey-option">
+              <input id="voz-a-voz" type="checkbox" />
+              <span class="survey-checkbox-space"></span>
+              <label for="voz-a-voz">Voz a voz</label>
+            </div>
+            <div class="survey-option">
+              <input id="publicidad-fisica" type="checkbox" />
+              <span class="survey-checkbox-space"></span>
+              <label for="publicidad-fisica">Publicidad física</label>
+            </div>
+            <div class="survey-option">
+              <input id="otro" type="checkbox" />
+              <span class="survey-checkbox-space"></span>
+              <label for="otro">Otro (¿cuál?)</label>
+              <span class="survey-line"></span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Technical Recommendations Section -->
@@ -634,6 +664,67 @@ body {
   .reminder-box,
   .info-item {
     box-shadow: none;
+  }
+}
+
+.conditions-survey-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+  margin-bottom: 10px;
+}
+.survey-section {
+  background: #fafafa;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  padding: 15px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 100%;
+}
+.survey-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1976d2;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+.survey-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.survey-option {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #3d4852;
+}
+.survey-checkbox-space {
+  display: inline-block;
+  width: 10px;
+}
+.survey-line {
+  display: inline-block;
+  border-bottom: 2px solid #222;
+  width: 90px;
+  height: 1.2em;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+@media print {
+  .conditions-survey-grid {
+    box-shadow: none;
+    background: none;
+    gap: 10px;
+  }
+  .survey-section {
+    box-shadow: none;
+    background: none;
+    border: 1px solid #e0e0e0;
   }
 }
 </style>
