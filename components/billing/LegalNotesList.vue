@@ -74,6 +74,7 @@ export default {
       loadingDataTable: false,
       selected: [],
       headers: [
+        { text: '#', value: 'id', align: 'start' },
         { text: 'Fecha', value: 'createdAt', align: 'start' },
         { text: 'Debito', value: 'debit', sortable: false },
         { text: 'Crédito', value: 'credit', sortable: false },
