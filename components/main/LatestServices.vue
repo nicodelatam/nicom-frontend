@@ -472,7 +472,7 @@ export default {
         Fecha_Afiliacion: this.getDate(row.createdAt),
         Estrato: row.stratum,
         Activo: row.active && !row.indebt ? 'A' : !row.active && !row.indebt ? 'R' : 'D',
-        Saldo: row.balance
+        Saldo: row.invoices.filter(invoice => !invoice.payed).reduce((acc, invoice) => acc + invoice.balance, 0)
       })))
 
       // Configurar estilos
