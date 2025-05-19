@@ -704,7 +704,6 @@ export default {
             company: this.currentCompany.id // Link company if needed by action
           }
           const legalNoteRes = await this.$store.dispatch('billing/createLegalNote', legalNote)
-          console.log(legalNoteRes)
           if (!legalNoteRes) {
             // Use throw new Error for consistency
             throw new Error('Error creando la nota legal (saldo a favor).')

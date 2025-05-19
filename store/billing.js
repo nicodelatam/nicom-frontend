@@ -806,6 +806,8 @@ export const actions = {
             service.invoices.sort((a, b) => {
               return new Date(b.createdAt) - new Date(a.createdAt)
             })
+            service.invoices = service.invoices.filter(invoice => invoice.image !== null)
+            console.log(service)
             commit('getBillsByServiceId', service)
             resolve(service)
           })
