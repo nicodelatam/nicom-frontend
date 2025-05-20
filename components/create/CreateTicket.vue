@@ -786,7 +786,7 @@ export default {
               service: {
                 name: this.service.client_name,
                 address: this.address,
-                neighborhood: this.cx.neighborhood
+                neighborhood: this.cx.neighborhood.name
               }
             })
           } else if (this.technician && this.ticketPayload.type.name !== 'TRASLADO') {
