@@ -784,7 +784,7 @@ export default {
             this.sendWhatsapp({
               phone: this.technician.phone,
               service: {
-                name: this.service.client_name,
+                client_name: this.service.client_name,
                 address: this.address,
                 neighborhood: this.cx.neighborhood.name
               }
