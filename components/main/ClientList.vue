@@ -14,6 +14,7 @@
                 loading-text="Cargando información de clientes..."
                 hide-default-footer
                 mobile-breakpoint="100"
+                @click:row="selectRow($event)"
               >
                 <template v-slot:[`item.active`]="props">
                   <v-chip
@@ -190,6 +191,9 @@ export default {
     }
   },
   methods: {
+    selectRow (item) {
+      this.$router.push(`/client/${item.normalized_client ? item.normalized_client.id : ''}?city=${this.$route.query.city}&clienttype=${this.$route.query.clienttype}&company=${this.$route.query.company}&service=${item.id}`)
+    },
     toggleDniType (client, index) {
       const dniType = !client.corporate
       this.$store.dispatch('client/updateDniType', { client, corporate: dniType, index, token: this.$store.state.auth.token })

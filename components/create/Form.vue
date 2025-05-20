@@ -20,6 +20,50 @@
       <v-form v-model="valid">
         <v-row>
           <v-col>
+            <v-select
+              v-model="Client.company"
+              :items="[currentCompany]"
+              label="Compañia"
+              item-value="id"
+              item-text="name"
+              required
+              outlined
+              return-object
+              dense
+              hide-details
+            />
+          </v-col>
+          <v-col>
+            <v-select
+              v-model="Client.city"
+              :items="currentCompany.cities"
+              label="Ciudad"
+              item-value="id"
+              item-text="name"
+              required
+              outlined
+              return-object
+              dense
+              hide-details
+            />
+          </v-col>
+          <v-col>
+            <v-select
+              v-model="Client.clienttype"
+              :items="currentCompany.clienttypes"
+              label="Tipo de cliente"
+              item-value="id"
+              item-text="name"
+              required
+              outlined
+              return-object
+              dense
+              hide-details
+            />
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col>
             <v-text-field
               ref="dni"
               v-model="Client.dni"
@@ -78,30 +122,24 @@
             />
           </v-col>
         </v-row>
-        <v-row>
-          <v-col>
-            <v-select
-              v-model="Client.company"
-              :items="[currentCompany]"
-              label="Compañia"
-              item-value="id"
-              item-text="name"
-              required
-              outlined
-              return-object
-              dense
-              hide-details
-            />
-          </v-col>
-        </v-row>
         <v-btn
           class="mr-4 mt-4"
           color="primary"
           :loading="isSubmitting"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || incompleteCreation"
           @click="createClient"
         >
           Crear Cliente
+        </v-btn>
+        <v-btn
+          v-if="incompleteCreation"
+          class="mr-4 mt-4"
+          color="secondary"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
+          @click="continueCreation"
+        >
+          CONTINUAR CREACION
         </v-btn>
       </v-form>
     </v-card-text>
@@ -126,7 +164,9 @@ export default {
         dni: '',
         phone: '',
         email: null,
-        company: null
+        company: null,
+        city: null,
+        clienttype: null
       },
       alertBox: false,
       alertBoxColor: '',
@@ -145,7 +185,8 @@ export default {
       codeError: false,
       hideD00pHint: true,
       d00pHint: '',
-      codeSuccess: null
+      codeSuccess: null,
+      incompleteCreation: false
     }
   },
   computed: {
@@ -166,10 +207,14 @@ export default {
       const qs = require('qs')
       const query = qs.stringify({
         filters: {
+          company: {
+            $eq: this.currentCompany.id
+          },
           dni: {
             $eq: dni
           }
-        }
+        },
+        populate: ['services']
       },
       {
         encodeValuesOnly: true
@@ -189,6 +234,10 @@ export default {
               this.d00pHint = 'Ya existe un cliente con esta cedula.'
               this.codeError = true
               this.hideD00pHint = false
+              if (client[0].services === null || client[0].services.length === 0) {
+                this.d00pHint = 'La creación del cliente no se completó. Puede continuar con el boton de abajo.'
+                this.incompleteCreation = true
+              }
             } else {
               this.valid = true
               this.codeError = false
@@ -210,7 +259,7 @@ export default {
         return
       }
       if (
-        this.Client.name === '' || this.Client.dni === '' || this.Client.phone === '' || this.Client.email === null || this.Client.company === null
+        this.Client.name === '' || this.Client.dni === '' || this.Client.phone === '' || this.Client.email === null || this.Client.company === null || this.Client.city === null || this.Client.clienttype === null
       ) {
         this.$toast.error('Por favor, complete todos los campos.')
         this.isSubmitting = false
@@ -236,6 +285,54 @@ export default {
             dni: this.Client.dni,
             phone: this.Client.phone,
             email: this.Client.email
+          })
+        }).catch((error) => {
+          this.$toast.error(`Ha ocurrido un error ${error}`, { duration: 5000 })
+          this.isSubmitting = false
+        })
+    },
+    async continueCreation () {
+      this.isSubmitting = true
+      if (
+        this.Client.dni === '' || this.Client.city === null || this.Client.clienttype === null || this.Client.company === null
+      ) {
+        this.$toast.error('Por favor, complete los campos para continuar con la creación.')
+        this.isSubmitting = false
+        return
+      }
+
+      const qs = require('qs')
+      const query = qs.stringify({
+        filters: {
+          company: {
+            $eq: this.currentCompany.id
+          },
+          dni: {
+            $eq: this.Client.dni
+          }
+        },
+        populate: ['services']
+      },
+      {
+        encodeValuesOnly: true
+      })
+      await fetch(`${this.$config.API_STRAPI_ENDPOINT}normalized-clients?${query}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.$store.state.auth.token}`
+        }
+      })
+        .then(res => res.json())
+        .then(({ data: client }) => {
+          this.isSubmitting = false
+          // Instead of routing directly, emit an event with the created client data
+          this.$emit('client-created', {
+            id: client[0].id,
+            name: client[0].name,
+            dni: client[0].dni,
+            phone: client[0].phone,
+            email: client[0].email
           })
         }).catch((error) => {
           this.$toast.error(`Ha ocurrido un error ${error}`, { duration: 5000 })

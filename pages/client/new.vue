@@ -2,7 +2,7 @@
   <v-container>
     <v-card class="rounded-xl mx-auto" max-width="1200">
       <v-card-title class="justify-center">
-        Afiliación de Cliente | Proceso Simplificado
+        Afiliación de Cliente | {{ $route.query.company }}
       </v-card-title>
       <v-divider class="mb-5" />
 

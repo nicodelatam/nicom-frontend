@@ -2,7 +2,6 @@
   <v-container fluid class="px-0">
     <v-row
       v-if="searchResult"
-      class="mt-3"
     >
       <v-col
         cols="12"
@@ -329,23 +328,6 @@
                     hide-details="auto"
                     @blur="updateService"
                     @keyup.enter="$event.target.blur()"
-                  />
-                </v-col>
-              </v-row>
-              <v-row v-if="currentService.name === 'INTERNET'">
-                <v-col>
-                  <v-select
-                    v-model="currentService.newModel"
-                    :disabled="!$isAdmin() || loading"
-                    :items="idwith"
-                    item-text="name"
-                    item-value="id"
-                    mandatory
-                    label="Identificar con"
-                    outlined
-                    dense
-                    hide-details
-                    @change="updateService"
                   />
                 </v-col>
               </v-row>
