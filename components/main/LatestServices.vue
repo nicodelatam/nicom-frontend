@@ -83,6 +83,7 @@
           header-color="primary"
           :caption="filterMonth ? pagination.total + ' Resultados - Filtrando por fecha...' : 'Listado de Clientes'"
           @page-count="pageCount = $event"
+          @click:row="selectRow($event)"
         >
           <template v-slot:[`item.active`]="props">
             <v-chip
@@ -125,7 +126,7 @@
                   icon
                   :color="$vuetify.theme.dark && !block ? 'white' : 'green darken-4 white--text'"
                   class="rounded-xl"
-                  :to="`/client/${item.normalized_client ? item.normalized_client.id : ''}?city=${$route.query.city}&clienttype=${$route.query.clienttype}&service=${item.id}`"
+                  :to="`/client/${item.normalized_client ? item.normalized_client.id : ''}?city=${$route.query.city}&clienttype=${$route.query.clienttype}&company=${$route.query.company}&service=${item.id}`"
                   v-on="on"
                 >
                   <v-icon :class="block ? 'mr-1' : ''">
@@ -229,6 +230,9 @@ export default {
     this.getFreeServices()
   },
   methods: {
+    selectRow (item) {
+      this.$router.push(`/client/${item.normalized_client ? item.normalized_client.id : ''}?city=${this.$route.query.city}&clienttype=${this.$route.query.clienttype}&company=${this.$route.query.company}&service=${item.id}`)
+    },
     async getLatestServices () {
       this.loadingDataTable = true
       const qs = require('qs')
