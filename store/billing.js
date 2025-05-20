@@ -1052,5 +1052,65 @@ export const actions = {
     } else if (clienttype === 'TELEVISION') {
       commit('getHeadersByClientType', television)
     }
+  },
+  async cancelLegalNote ({ dispatch }, { legalNote, token }) {
+    // 1. Marcar el recibo como anulado
+    await fetch(`${this.$config.API_STRAPI_ENDPOINT}legal-notes/${legalNote.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        data: {
+          cancelled: true,
+          cancelreason: 'Anulado por usuario'
+        }
+      })
+    })
+    // 2. Restaurar saldo de las facturas relacionadas
+    if (legalNote.invoices && legalNote.invoices.length > 0) {
+      // Distribuir el monto proporcionalmente si hay varias facturas
+      const totalCredit = legalNote.credit
+      const invoicesCount = legalNote.invoices.length
+      const amountPerInvoice = Math.floor(totalCredit / invoicesCount)
+      const remainder = totalCredit - (amountPerInvoice * invoicesCount)
+
+      for (let i = 0; i < invoicesCount; i++) {
+        const invoice = legalNote.invoices[i]
+        let restoreAmount = amountPerInvoice
+        if (i === invoicesCount - 1) { restoreAmount += remainder }
+        const newBalance = (invoice.balance || 0) + restoreAmount
+
+        // Determinar el estado correcto de payed y partial
+        let payed = false
+        let partial = false
+        if (newBalance === 0) {
+          payed = true
+          partial = false
+        } else if (newBalance > 0 && newBalance < invoice.value) {
+          payed = false
+          partial = true
+        } else if (newBalance >= invoice.value) {
+          payed = false
+          partial = false
+        }
+
+        await fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices/${invoice.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            data: {
+              balance: newBalance,
+              payed,
+              partial
+            }
+          })
+        })
+      }
+    }
   }
 }

@@ -3,7 +3,7 @@
     <div class="header-section">
       <div class="logo-container">
         <img
-          :src="this.$config.CDN_STRAPI_ENDPOINT + company.logo.url"
+          :src="this.$config.CDN_STRAPI_ENDPOINT + getLogo(company)"
           :alt="company.short_name"
           class="company-logo"
         >
@@ -212,6 +212,13 @@ export default {
     },
     getValue () {
       return this.bill.value
+    },
+    getLogo (company) {
+      if (company.logo) {
+        return company.logo.url
+      } else {
+        return 'default.png'
+      }
     }
   }
 }

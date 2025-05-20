@@ -50,6 +50,14 @@
       </template>
       <template v-slot:[`item.actions`]="props">
         <v-btn
+          v-if="props.item.debit === 0 && props.item.credit > 0 && !props.item.cancelled && props.item.invoices && props.item.invoices.length > 0"
+          class="red white--text"
+          x-small
+          @click="openCancelDialog(props.item)"
+        >
+          <v-icon>mdi-cancel</v-icon>
+        </v-btn>
+        <v-btn
           v-if="props.item.debit === 0 && props.item.credit > 0 && !props.item.cancelled"
           class="white black--text"
           x-small
@@ -60,6 +68,19 @@
       </template>
     </v-data-table>
     <v-pagination v-model="page" :length="pageCount" />
+    <v-dialog v-model="dialogCancel" max-width="400">
+      <v-card>
+        <v-card-title class="headline">Confirmar anulación</v-card-title>
+        <v-card-text>
+          ¿Está seguro que desea anular este recibo? Esta acción restaurará el saldo de la(s) factura(s) relacionada(s).
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="grey" text @click="dialogCancel = false">Cancelar</v-btn>
+          <v-btn color="red" text @click="cancelLegalNote">Anular</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 <script>
@@ -73,6 +94,8 @@ export default {
       options: {},
       loadingDataTable: false,
       selected: [],
+      dialogCancel: false,
+      legalNoteToCancel: null,
       headers: [
         { text: '#', value: 'id', align: 'start' },
         { text: 'Fecha', value: 'createdAt', align: 'start' },
@@ -172,6 +195,32 @@ export default {
       localStorage.removeItem('receiptToPrint')
       localStorage.setItem('receiptToPrint', JSON.stringify(receipt))
       window.open(`/bill?id=${receipt.id}&city=${this.$route.query.city}&clienttype=${this.$route.query.clienttype}&company=${this.$route.query.company}`, '_blank')
+    },
+    openCancelDialog (item) {
+      this.legalNoteToCancel = item
+      this.dialogCancel = true
+    },
+    async cancelLegalNote () {
+      this.loadingDataTable = true
+      try {
+        await this.$store.dispatch('billing/cancelLegalNote', {
+          legalNote: this.legalNoteToCancel,
+          token: this.$store.state.auth.token
+        })
+        // Refrescar datos del servicio actual
+        await this.$store.dispatch('billing/getBillingInfoByServiceId', {
+          serviceId: this.currentService.id,
+          token: this.$store.state.auth.token,
+          showPayed: this.showPayed
+        })
+        this.$toast.success('Recibo anulado y saldo restaurado.', { duration: 3000 })
+      } catch (e) {
+        this.$toast.error('Error al anular el recibo.', { duration: 3000 })
+      } finally {
+        this.dialogCancel = false
+        this.legalNoteToCancel = null
+        this.loadingDataTable = false
+      }
     }
   }
 }
