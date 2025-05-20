@@ -789,7 +789,7 @@ export default {
                 neighborhood: this.cx.neighborhood
               }
             })
-          } else {
+          } else if (this.technician && this.ticketPayload.type.name !== 'TRASLADO') {
             this.saveAssignatedTechnician(ticket.data.id)
             this.sendWhatsapp({
               phone: this.technician.phone,
