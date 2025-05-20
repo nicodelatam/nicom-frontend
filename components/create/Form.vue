@@ -194,6 +194,17 @@ export default {
       return this.$store.state.company.currentCompany
     }
   },
+  watch: {
+    'Client.clienttype' (newVal) {
+      if (newVal.name === this.$route.query.clienttype) { return }
+      this.$router.replace({ query: { company: this.$route.query.company, city: this.$route.query.city, clienttype: newVal.name } })
+    },
+    'Client.city' (newVal) {
+      console.log(newVal)
+      if (newVal.name === this.$route.query.city) { return }
+      this.$router.replace({ query: { company: this.$route.query.company, clienttype: this.$route.query.clienttype, city: newVal.name } })
+    }
+  },
   mounted () {
     if (this.clientPhone) {
       this.Client.phone = this.clientPhone
