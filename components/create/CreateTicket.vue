@@ -779,7 +779,17 @@ export default {
             this.createInvoiceMovement(this.service.id, this.ticketPayload.type.invoice_type.price, 'TRASLADO', this.ticketPayload.type.invoice_type.id)
           }
           const ticket = await input.json()
-          if (this.technician) {
+          if (this.technician && this.ticketPayload.type.name === 'TRASLADO') {
+            this.saveAssignatedTechnician(ticket.data.id)
+            this.sendWhatsapp({
+              phone: this.technician.phone,
+              service: {
+                name: this.service.client_name,
+                address: this.address,
+                neighborhood: this.cx.neighborhood
+              }
+            })
+          } else {
             this.saveAssignatedTechnician(ticket.data.id)
             this.sendWhatsapp({
               phone: this.technician.phone,
