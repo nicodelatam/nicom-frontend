@@ -130,8 +130,8 @@
                     <v-switch
                       v-model="incluirCortados"
                       color="warning"
-                      label="Incluir servicios ya cortados"
-                      hint="Para revisión o re-proceso"
+                      label="Incluir servicios en mora"
+                      hint="Servicios activos ya marcados como morosos"
                       persistent-hint
                     />
                   </v-col>
@@ -306,14 +306,14 @@
             </template>
             <template #item.estadoCorte="{ item }">
               <v-chip
-                :color="item.estadoCorte === 'cortado' ? 'error' : 'success'"
+                :color="getEstadoColor(item.estadoCorte)"
                 dark
                 small
               >
                 <v-icon left small>
-                  {{ item.estadoCorte === 'cortado' ? 'mdi-power-plug-off' : 'mdi-power-plug' }}
+                  {{ getEstadoIcon(item.estadoCorte) }}
                 </v-icon>
-                {{ item.estadoCorte === 'cortado' ? 'Cortado' : 'Pendiente' }}
+                {{ getEstadoText(item.estadoCorte) }}
               </v-chip>
             </template>
             <template #item.client_name="{ item }">
@@ -562,7 +562,7 @@ export default {
       serviceHeaders: [
         { text: 'Código', value: 'code', width: '100px' },
         { text: 'Cliente', value: 'client_name', width: '200px' },
-        { text: 'Balance', value: 'balance', width: '120px', align: 'center' },
+        { text: 'Saldo', value: 'balance', width: '120px', align: 'center' },
         { text: 'Estado', value: 'estadoCorte', width: '120px', align: 'center' },
         { text: 'Dirección', value: 'address', width: '200px' },
         { text: 'Barrio', value: 'neighborhood', width: '150px' },
@@ -700,17 +700,22 @@ export default {
       if (this.foundServices.length === 0) {
         const mensaje = this.incluirCortados
           ? 'No se encontraron servicios con el saldo especificado'
-          : 'No se encontraron servicios pendientes de corte con el saldo especificado. Active "Incluir servicios ya cortados" si desea revisarlos.'
+          : 'No se encontraron servicios disponibles para corte con el saldo especificado. Active "Incluir servicios en mora" si desea revisarlos.'
         this.$toast.info(mensaje)
       } else {
-        const cortados = this.foundServices.filter(s => s.estadoCorte === 'cortado').length
-        const pendientes = this.foundServices.filter(s => s.estadoCorte === 'pendiente').length
+        const enMora = this.foundServices.filter(s => s.estadoCorte === 'en_mora').length
+        const disponibles = this.foundServices.filter(s => s.estadoCorte === 'disponible').length
+        const retirados = this.foundServices.filter(s => s.estadoCorte === 'retirado').length
 
         let mensaje = `Se encontraron ${this.foundServices.length} servicios`
-        if (cortados > 0) {
-          mensaje += ` (${pendientes} pendientes, ${cortados} ya cortados)`
+        if (enMora > 0 || retirados > 0) {
+          const estadisticas = []
+          if (disponibles > 0) { estadisticas.push(`${disponibles} disponibles`) }
+          if (enMora > 0) { estadisticas.push(`${enMora} en mora`) }
+          if (retirados > 0) { estadisticas.push(`${retirados} retirados`) }
+          mensaje += ` (${estadisticas.join(', ')})`
         }
-        this.$toast.success(mensaje)
+        this.$toast.success(mensaje, { duration: 4000 })
       }
     },
     async confirmServices () {
@@ -904,7 +909,7 @@ export default {
       link.click()
       document.body.removeChild(link)
 
-      this.$toast.success(`Archivo exportado: ${this.foundServices.length} servicios`)
+      this.$toast.success(`Archivo exportado: ${this.foundServices.length} servicios`, { duration: 4000 })
     },
     openSimulationDialog () {
       this.simulationDialog = true
@@ -955,6 +960,24 @@ export default {
     },
     cancelDuplicateProcess () {
       this.duplicateProcessDialog = false
+    },
+    getEstadoColor (estado) {
+      if (estado === 'en_mora') { return 'error' }
+      if (estado === 'disponible') { return 'info' }
+      if (estado === 'retirado') { return 'grey' }
+      return 'warning'
+    },
+    getEstadoIcon (estado) {
+      if (estado === 'en_mora') { return 'mdi-alert-circle' }
+      if (estado === 'disponible') { return 'mdi-check-circle' }
+      if (estado === 'retirado') { return 'mdi-account-off' }
+      return 'mdi-help'
+    },
+    getEstadoText (estado) {
+      if (estado === 'en_mora') { return 'En Mora' }
+      if (estado === 'disponible') { return 'Disponible para corte' }
+      if (estado === 'retirado') { return 'Retirado' }
+      return 'Desconocido'
     }
   }
 }

@@ -30,19 +30,20 @@
       <v-card-text>
         <!-- Alertas contextuales -->
         <v-alert
-          v-if="serviciosYaCortados.length > 0"
+          v-if="serviciosEnMora.length > 0 || serviciosRetirados.length > 0"
           type="warning"
           border="left"
           colored-border
           class="mb-4"
         >
-          <h4>⚠️ Servicios Ya Cortados Detectados</h4>
+          <h4>⚠️ Servicios No Disponibles Detectados</h4>
           <p class="mb-1">
-            Se encontraron <strong>{{ serviciosYaCortados.length }}</strong> servicios que ya están cortados.
+            Se encontraron servicios que no están disponibles para corte:
           </p>
           <p class="mb-0">
-            <strong>Pendientes:</strong> {{ serviciosPendientes.length }} |
-            <strong>Ya cortados:</strong> {{ serviciosYaCortados.length }}
+            <strong>Disponibles:</strong> {{ serviciosDisponibles.length }} |
+            <strong>En mora:</strong> {{ serviciosEnMora.length }} |
+            <strong>Retirados:</strong> {{ serviciosRetirados.length }}
           </p>
         </v-alert>
 
@@ -63,35 +64,70 @@
         <!-- Panel de información existente -->
         <v-card outlined class="mb-4">
           <v-card-title class="primary white--text">
-            <v-icon left color="white">mdi-information</v-icon>
+            <v-icon left color="white">
+              mdi-information
+            </v-icon>
             Información del Proceso
           </v-card-title>
           <v-card-text class="py-3">
             <v-row>
-              <v-col cols="12" md="4">
+              <v-col cols="12" md="3">
                 <div class="d-flex align-center">
-                  <v-icon color="primary" class="mr-2">mdi-account-group</v-icon>
+                  <v-icon color="primary" class="mr-2">
+                    mdi-account-group
+                  </v-icon>
                   <div>
-                    <div class="text-caption text--secondary">Total Servicios</div>
-                    <div class="text-h6 font-weight-bold">{{ totalServicios }}</div>
+                    <div class="text-caption text--secondary">
+                      Total Servicios
+                    </div>
+                    <div class="text-h6 font-weight-bold">
+                      {{ totalServicios }}
+                    </div>
                   </div>
                 </div>
               </v-col>
-              <v-col cols="12" md="4">
+              <v-col cols="12" md="3">
                 <div class="d-flex align-center">
-                  <v-icon color="success" class="mr-2">mdi-power-plug</v-icon>
+                  <v-icon color="success" class="mr-2">
+                    mdi-check-circle
+                  </v-icon>
                   <div>
-                    <div class="text-caption text--secondary">Pendientes</div>
-                    <div class="text-h6 font-weight-bold text-success">{{ serviciosPendientes.length }}</div>
+                    <div class="text-caption text--secondary">
+                      Disponibles
+                    </div>
+                    <div class="text-h6 font-weight-bold text-success">
+                      {{ serviciosDisponibles.length }}
+                    </div>
                   </div>
                 </div>
               </v-col>
-              <v-col cols="12" md="4">
+              <v-col cols="12" md="3">
                 <div class="d-flex align-center">
-                  <v-icon color="error" class="mr-2">mdi-power-plug-off</v-icon>
+                  <v-icon color="error" class="mr-2">
+                    mdi-alert-circle
+                  </v-icon>
                   <div>
-                    <div class="text-caption text--secondary">Ya Cortados</div>
-                    <div class="text-h6 font-weight-bold text-error">{{ serviciosYaCortados.length }}</div>
+                    <div class="text-caption text--secondary">
+                      En Mora
+                    </div>
+                    <div class="text-h6 font-weight-bold text-error">
+                      {{ serviciosEnMora.length }}
+                    </div>
+                  </div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="3">
+                <div class="d-flex align-center">
+                  <v-icon color="grey" class="mr-2">
+                    mdi-account-off
+                  </v-icon>
+                  <div>
+                    <div class="text-caption text--secondary">
+                      Retirados
+                    </div>
+                    <div class="text-h6 font-weight-bold text--secondary">
+                      {{ serviciosRetirados.length }}
+                    </div>
                   </div>
                 </div>
               </v-col>
@@ -141,14 +177,17 @@ export default {
     billingyear () {
       return this.$store.state.cuts.year
     },
-    serviciosYaCortados () {
-      return this.$store.getters['cuts/serviciosYaCortados']
-    },
-    serviciosPendientes () {
-      return this.$store.getters['cuts/serviciosPendientes']
-    },
     totalServicios () {
       return this.$store.getters['cuts/totalServicios']
+    },
+    serviciosRetirados () {
+      return this.$store.getters['cuts/serviciosRetirados']
+    },
+    serviciosEnMora () {
+      return this.$store.getters['cuts/serviciosEnMora']
+    },
+    serviciosDisponibles () {
+      return this.$store.getters['cuts/serviciosDisponibles']
     }
   },
   methods: {

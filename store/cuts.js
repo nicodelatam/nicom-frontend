@@ -577,18 +577,21 @@ export const actions = {
             balance: {
               $gte: payload.minimumBalance
             }
-          },
-          {
-            active: true
           }
         ]
       }
 
-      // Por defecto, solo mostrar servicios en mora (no cortados)
-      // A menos que se especifique incluirCortados para revisión
+      // Por defecto, solo mostrar servicios activos
+      // Los servicios activos pueden tener saldo pendiente y ser candidatos a corte
+      // No importa si ya están marcados como indebt o no
+      filters.$and.push({
+        active: true // Solo servicios activos (no retirados)
+      })
+
+      // Si no se incluyen cortados, filtrar solo los que no están ya en mora
       if (!payload.incluirCortados) {
         filters.$and.push({
-          indebt: true
+          indebt: false // Solo servicios sin marca de mora previa
         })
       }
 
@@ -672,12 +675,25 @@ export const actions = {
               )
             }
 
-            // Agregar información de estado para la UI
-            filteredServices = filteredServices.map(service => ({
-              ...service,
-              estadoCorte: service.indebt ? 'pendiente' : 'cortado',
-              fechaUltimaActualizacion: service.updatedAt
-            }))
+            // Agregar información de estado usando la lógica correcta del negocio
+            filteredServices = filteredServices.map((service) => {
+              let estadoCorte
+              if (service.active && !service.indebt) {
+                estadoCorte = 'disponible' // Activo, sin marca de mora, candidato a corte
+              } else if (service.active && service.indebt) {
+                estadoCorte = 'en_mora' // Activo pero ya marcado como moroso
+              } else if (!service.active) {
+                estadoCorte = 'retirado' // Retirado del servicio
+              } else {
+                estadoCorte = 'desconocido'
+              }
+
+              return {
+                ...service,
+                estadoCorte,
+                fechaUltimaActualizacion: service.updatedAt
+              }
+            })
 
             resolve(filteredServices)
           })
@@ -883,11 +899,14 @@ export const actions = {
   }
 }
 export const getters = {
-  serviciosYaCortados: (state) => {
-    return state.servicesData.services.filter(service => service.estadoCorte === 'cortado')
+  serviciosDisponibles: (state) => {
+    return state.servicesData.services.filter(service => service.estadoCorte === 'disponible')
   },
-  serviciosPendientes: (state) => {
-    return state.servicesData.services.filter(service => service.estadoCorte === 'pendiente')
+  serviciosEnMora: (state) => {
+    return state.servicesData.services.filter(service => service.estadoCorte === 'en_mora')
+  },
+  serviciosRetirados: (state) => {
+    return state.servicesData.services.filter(service => service.estadoCorte === 'retirado')
   },
   totalServicios: (state) => {
     return state.servicesData.services.length

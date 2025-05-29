@@ -1,66 +1,66 @@
 <template>
   <div>
-    <div class="d-flex">
-      <v-select
-        v-model="selectedCity"
-        :items="cities"
-        label="Filtrar Ciudad"
-        item-value="id"
-        item-text="name"
-        return-object
-        filled
-        rounded
-        hide-details="auto"
-        class="mr-2 elevation-0"
-        style="width:180px;"
-        @change="changeCity(selectedCity)"
-      >
-        <template v-slot:item="{ item }">
-          {{ item.name }}
-        </template>
-      </v-select>
-      <v-select
-        v-model="selectedClienttype"
-        :items="clienttypes"
-        label="Filtrar Servicio"
-        item-value="id"
-        item-text="name"
-        return-object
-        filled
-        rounded
-        hide-details="auto"
-        class="mr-2 elevation-0"
-        style="width:180px;"
-        @change="changeType(selectedClienttype)"
-      >
-        <template v-slot:item="{ item }">
-          {{ item.name }}
-        </template>
-      </v-select>
-      <v-select
-        v-model="month"
-        :items="months"
-        label="Mes a operar"
-        class="mr-2 elevation-0"
-        filled
-        rounded
-      />
-      <v-text-field
-        v-model.number="year"
-        type="Number"
-        label="Año a operar"
-        max="9999"
-        filled
-        rounded
-      />
-    </div>
-    <v-btn
-      :disabled="!selectedCity || !selectedClienttype"
-      color="primary"
-      @click="addBillingPeriod"
-    >
-      Continuar
-    </v-btn>
+    <v-card outlined class="mb-4">
+      <v-card-title>
+        <v-icon left>
+          mdi-calendar-month
+        </v-icon>
+        Seleccionar Período
+      </v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-select
+              v-model="month"
+              :items="months"
+              label="Mes a procesar"
+              outlined
+              prepend-inner-icon="mdi-calendar"
+              :rules="[rules.required]"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model.number="year"
+              type="number"
+              label="Año"
+              outlined
+              prepend-inner-icon="mdi-calendar-text"
+              :rules="[rules.required, rules.validYear]"
+            />
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
+
+    <v-row class="mb-4">
+      <v-col cols="12" md="6">
+        <v-card outlined>
+          <v-card-text class="text-center py-4">
+            <div class="text-h6 mb-1">
+              {{ getSelectedPeriodText() }}
+            </div>
+            <div class="text-body-2 text--secondary">
+              {{ getStatusText() }}
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col cols="12" md="6" class="d-flex align-center">
+        <v-btn
+          :disabled="!canContinue"
+          color="primary"
+          large
+          block
+          @click="addBillingPeriod"
+        >
+          <v-icon left>
+            mdi-arrow-right
+          </v-icon>
+          {{ getButtonText() }}
+        </v-btn>
+      </v-col>
+    </v-row>
   </div>
 </template>
 
@@ -121,7 +121,11 @@ export default {
           text: 'Diciembre',
           value: '12'
         }
-      ]
+      ],
+      rules: {
+        required: value => !!value || 'Este campo es requerido',
+        validYear: value => value >= 2020 || 'El año debe ser mayor o igual a 2020'
+      }
     }
   },
   computed: {
@@ -130,6 +134,21 @@ export default {
     },
     clienttypes () {
       return this.$store.state.company.clienttypes
+    },
+    isCurrentMonth () {
+      const currentMonth = new Date().getMonth() + 1
+      return this.month === currentMonth.toString()
+    },
+    isPastMonth () {
+      const currentMonth = new Date().getMonth() + 1
+      return this.month < currentMonth && this.month !== null
+    },
+    isFutureMonth () {
+      const currentMonth = new Date().getMonth() + 1
+      return this.month > currentMonth && this.month !== null
+    },
+    canContinue () {
+      return this.selectedCity && this.selectedClienttype && this.month && this.year
     }
   },
   watch: {
@@ -138,13 +157,38 @@ export default {
     },
     year () {
       this.setYear()
+    },
+    cities: {
+      handler (newCities) {
+        if (newCities && newCities.length > 0 && !this.selectedCity) {
+          this.setSelectedCity()
+        }
+      },
+      immediate: true
+    },
+    clienttypes: {
+      handler (newClienttypes) {
+        if (newClienttypes && newClienttypes.length > 0 && !this.selectedClienttype) {
+          this.setSelectedClienttype()
+        }
+      },
+      immediate: true
     }
   },
   mounted () {
-    this.setSelectedCity()
-    this.setSelectedClienttype()
+    this.$nextTick(() => {
+      this.initializeDefaults()
+      this.setSelectedCity()
+      this.setSelectedClienttype()
+    })
   },
   methods: {
+    initializeDefaults () {
+      const currentDate = new Date()
+      this.year = currentDate.getFullYear()
+      const currentMonth = currentDate.getMonth() + 1
+      this.month = currentMonth.toString()
+    },
     async addBillingPeriod () {
       if (this.month && this.year) {
         this.setMonth()
@@ -177,26 +221,48 @@ export default {
       this.$store.commit('cuts/e1', '2')
     },
     setSelectedCity () {
-      if (this.$route.query.city) {
-        this.selectedCity = this.$store.state.company.cities.find(c => c.name === this.$route.query.city)
+      if (this.$route.query.city && this.cities && this.cities.length > 0) {
+        const foundCity = this.cities.find(c => c.name === this.$route.query.city)
+        if (foundCity) {
+          this.selectedCity = foundCity
+        } else if (this.cities.length > 0) {
+          this.selectedCity = this.cities[0]
+        }
       }
     },
     setSelectedClienttype () {
-      if (this.$route.query.clienttype) {
-        this.selectedClienttype = this.$store.state.company.clienttypes.find(c => c.name === this.$route.query.clienttype)
+      if (this.$route.query.clienttype && this.clienttypes && this.clienttypes.length > 0) {
+        const foundClienttype = this.clienttypes.find(c => c.name === this.$route.query.clienttype)
+        if (foundClienttype) {
+          this.selectedClienttype = foundClienttype
+        } else if (this.clienttypes.length > 0) {
+          this.selectedClienttype = this.clienttypes[0]
+        }
       }
-    },
-    changeCity (city) {
-      this.$router.push({ query: { city: city.name, clienttype: this.$route.query.clienttype } })
-    },
-    changeType (clienttype) {
-      this.$router.push({ query: { city: this.$route.query.city, clienttype: clienttype.name } })
     },
     setMonth () {
       this.$store.commit('cuts/setMonth', this.month)
     },
     setYear () {
       this.$store.commit('cuts/setYear', this.year)
+    },
+    getSelectedPeriodText () {
+      if (this.month && this.year) {
+        return `${this.months.find(m => m.value === this.month)?.text} ${this.year}`
+      }
+      return 'Seleccione un período'
+    },
+    getStatusText () {
+      if (this.isCurrentMonth) { return 'Período actual' }
+      if (this.isPastMonth) { return 'Período anterior' }
+      if (this.isFutureMonth) { return 'Período futuro' }
+      return 'Período no seleccionado'
+    },
+    getButtonText () {
+      if (this.month && this.year) {
+        return `Continuar con ${this.months.find(m => m.value === this.month)?.text}`
+      }
+      return 'Seleccione un período'
     }
   }
 }
