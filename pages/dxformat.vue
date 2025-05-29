@@ -26,25 +26,30 @@
             </v-col>
           </v-row>
           <v-row class="mt-5">
+            <div v-if="services && services.length === 0" class="w-100 text-center pa-4">
+              <h3 style="color:#c9c9c9;">
+                No hay servicios para mostrar en la agenda
+              </h3>
+            </div>
             <div
               v-for="item in services"
-              :key="item.id"
+              :key="item.id || item.code"
               class="parent"
             >
               <span>
-                {{ item.code }}
+                {{ item.code || 'N/A' }}
               </span>
               <span>
-                {{ item.name }}
+                {{ getClientName(item) }}
               </span>
               <span>
-                {{ item.address }}
+                {{ item.address || 'Sin dirección' }}
               </span>
               <span>
-                {{ item.neighborhood }}
+                {{ item.neighborhood || 'Sin barrio' }}
               </span>
               <span>
-                {{ item.phone }}
+                {{ getClientPhone(item) }}
               </span>
               <span style="color:#c9c9c9;">
                 OBSERVACIONES
@@ -52,7 +57,7 @@
             </div>
           </v-row>
           <v-row class="mt-3 justify-center" style="border: 1px solid grey;">
-            Agenda de desconexiones por mora generada por {{ $store.state.auth.username.charAt(0).toUpperCase() + $store.state.auth.username.slice(1) }} el {{ getDateLog(new Date()) }}
+            Agenda de desconexiones por mora generada por {{ getUserDisplayName() }} el {{ getDateLog(new Date()) }}
           </v-row>
         </v-container>
       </v-card-text>
@@ -79,13 +84,32 @@ export default {
   },
   methods: {
     getServicesDx () {
-      if (localStorage.getItem('servicesDx')) {
-        this.services = JSON.parse(localStorage.getItem('servicesDx'))
+      try {
+        if (localStorage.getItem('servicesDx')) {
+          const servicesData = JSON.parse(localStorage.getItem('servicesDx'))
+          this.services = Array.isArray(servicesData) ? servicesData : []
+        } else {
+          this.services = []
+        }
+      } catch (error) {
+        console.error('Error al cargar servicios desde localStorage:', error)
+        this.services = []
+        // Limpiar localStorage corrupto
+        localStorage.removeItem('servicesDx')
       }
     },
     servicesDxClienttype () {
-      if (localStorage.getItem('servicesDxClienttype')) {
-        this.clienttype = JSON.parse(localStorage.getItem('servicesDxClienttype'))
+      try {
+        if (localStorage.getItem('servicesDxClienttype')) {
+          this.clienttype = JSON.parse(localStorage.getItem('servicesDxClienttype'))
+        } else {
+          this.clienttype = this.$route.query.clienttype || 'SERVICIOS'
+        }
+      } catch (error) {
+        console.error('Error al cargar tipo de cliente desde localStorage:', error)
+        this.clienttype = this.$route.query.clienttype || 'SERVICIOS'
+        // Limpiar localStorage corrupto
+        localStorage.removeItem('servicesDxClienttype')
       }
     },
     getDate (date) {
@@ -97,6 +121,57 @@ export default {
       const dateObject = new Date(date)
       const humanDateFormat = dateObject.toLocaleString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
       return humanDateFormat
+    },
+    getUserDisplayName () {
+      try {
+        // Verificar si existe el store de auth y el usuario
+        if (!this.$store.state.auth) {
+          return 'Usuario no identificado'
+        }
+
+        // Intentar obtener username de diferentes posibles ubicaciones
+        const username = this.$store.state.auth.username ||
+                        this.$store.state.auth.user?.username ||
+                        this.$store.state.auth.name ||
+                        this.$store.state.auth.user?.name
+
+        if (!username) {
+          return 'Usuario no identificado'
+        }
+
+        // Capitalizar la primera letra de forma segura
+        if (typeof username === 'string' && username.length > 0) {
+          return username.charAt(0).toUpperCase() + username.slice(1)
+        }
+
+        return username.toString()
+      } catch (error) {
+        console.error('Error al obtener nombre de usuario:', error)
+        return 'Usuario no identificado'
+      }
+    },
+    getClientName (item) {
+      try {
+        // Intentar obtener el nombre del cliente de diferentes ubicaciones posibles
+        return item.normalized_client?.name ||
+               item.client_name ||
+               item.name ||
+               'Sin nombre'
+      } catch (error) {
+        console.error('Error al obtener nombre del cliente:', error)
+        return 'Sin nombre'
+      }
+    },
+    getClientPhone (item) {
+      try {
+        // Intentar obtener el teléfono del cliente de diferentes ubicaciones posibles
+        return item.normalized_client?.phone ||
+               item.phone ||
+               'Sin teléfono'
+      } catch (error) {
+        console.error('Error al obtener teléfono del cliente:', error)
+        return 'Sin teléfono'
+      }
     }
   },
   head () {

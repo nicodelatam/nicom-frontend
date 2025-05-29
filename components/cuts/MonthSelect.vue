@@ -157,7 +157,8 @@ export default {
         city: this.selectedCity,
         token: this.$store.state.auth.token
       })
-      if (lastbillingperiod) {
+      if (lastbillingperiod && lastbillingperiod.length > 0) {
+        console.log(lastbillingperiod)
         this.$store.commit('cuts/currentBillingPeriod', lastbillingperiod[0].id)
         if (lastbillingperiod[0].month === parseInt(this.month) && lastbillingperiod[0].year === this.year) {
           this.$store.commit('cuts/e1', '2')

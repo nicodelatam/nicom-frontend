@@ -21,7 +21,12 @@ export const state = () => ({
   ready: [],
   type: null,
   validServices: [],
-  currentBillingPeriod: null
+  currentBillingPeriod: null,
+  servicesData: {
+    services: [],
+    minimumBalance: 0,
+    totalBalance: 0
+  }
 })
 export const mutations = {
   currentBillingPeriod (state, currentBillingPeriod) {
@@ -49,6 +54,11 @@ export const mutations = {
     state.ready = []
     state.type = null
     state.validServices = []
+    state.servicesData = {
+      services: [],
+      minimumBalance: 0,
+      totalBalance: 0
+    }
   },
   e1 (state, e1) {
     state.e1 = e1
@@ -127,6 +137,9 @@ export const mutations = {
   },
   getServicesByPlan (state, services) {
     state.servicesByPlan = services
+  },
+  setServicesData (state, servicesData) {
+    state.servicesData = servicesData
   }
 }
 export const actions = {
@@ -546,5 +559,337 @@ export const actions = {
     } catch (error) {
       throw new Error(`LAST DEBT HISTORY ACTION ${error}`)
     }
+  },
+  getServicesByBalance ({ commit }, payload) {
+    try {
+      const qs = require('qs')
+
+      // Construir filtros dinámicamente
+      const filters = {
+        $and: [
+          {
+            city: { name: payload.city }
+          },
+          {
+            clienttype: { name: payload.clienttype }
+          },
+          {
+            balance: {
+              $gte: payload.minimumBalance
+            }
+          },
+          {
+            active: true
+          }
+        ]
+      }
+
+      // Por defecto, solo mostrar servicios en mora (no cortados)
+      // A menos que se especifique incluirCortados para revisión
+      if (!payload.incluirCortados) {
+        filters.$and.push({
+          indebt: true
+        })
+      }
+
+      // Agregar filtros adicionales si están definidos
+      if (payload.filters) {
+        if (payload.filters.maxBalance) {
+          filters.$and.push({
+            balance: {
+              $lte: payload.filters.maxBalance
+            }
+          })
+        }
+
+        if (payload.filters.stratum) {
+          filters.$and.push({
+            stratum: payload.filters.stratum
+          })
+        }
+
+        if (payload.filters.neighborhood) {
+          filters.$and.push({
+            neighborhood: {
+              $containsi: payload.filters.neighborhood
+            }
+          })
+        }
+
+        if (payload.filters.monthsInDebt) {
+          // Calcular período de facturación basado en meses de mora
+          const currentDate = new Date()
+          const targetMonth = currentDate.getMonth() + 1 - parseInt(payload.filters.monthsInDebt)
+          const targetYear = targetMonth <= 0 ? currentDate.getFullYear() - 1 : currentDate.getFullYear()
+          const adjustedMonth = targetMonth <= 0 ? 12 + targetMonth : targetMonth
+
+          filters.$and.push({
+            billingmonth: adjustedMonth
+          })
+          filters.$and.push({
+            billingyear: targetYear
+          })
+        }
+      }
+
+      const query = qs.stringify({
+        filters,
+        pagination: {
+          pageSize: 1000
+        },
+        populate: [
+          'normalized_client',
+          'service_addresses',
+          'service_addresses.neighborhood',
+          'plan',
+          'offer'
+        ],
+        sort: 'balance:desc'
+      },
+      {
+        encodeValuesOnly: true
+      })
+
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}services?${query}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${payload.token}`
+          }
+        })
+          .then(res => res.json())
+          .then(({ data: services }) => {
+            // Filtrar servicios que realmente tengan el balance requerido
+            let filteredServices = services.filter(service =>
+              service.balance && service.balance >= payload.minimumBalance
+            )
+
+            // Aplicar filtro de saldo máximo en el frontend como respaldo
+            if (payload.filters && payload.filters.maxBalance) {
+              filteredServices = filteredServices.filter(service =>
+                service.balance <= payload.filters.maxBalance
+              )
+            }
+
+            // Agregar información de estado para la UI
+            filteredServices = filteredServices.map(service => ({
+              ...service,
+              estadoCorte: service.indebt ? 'pendiente' : 'cortado',
+              fechaUltimaActualizacion: service.updatedAt
+            }))
+
+            resolve(filteredServices)
+          })
+          .catch((error) => {
+            reject(new Error(`Error al obtener servicios por balance: ${error.message}`))
+          })
+      })
+    } catch (error) {
+      throw new Error(`GET SERVICES BY BALANCE ACTION ${error}`)
+    }
+  },
+  createBillingPeriodWithBalance ({ commit }, payload) {
+    try {
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}billingperiods`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${payload.token}`
+          },
+          body: JSON.stringify({
+            data: {
+              name: `${payload.name} - Balance ≥ ${payload.minimumBalance}`,
+              city: payload.cityId,
+              clienttype: payload.clienttypeId,
+              month: payload.month,
+              year: payload.year,
+              errors: 0,
+              errorList: '',
+              successes: payload.servicesCount,
+              finished: false,
+              processType: 'balance',
+              minimumBalance: payload.minimumBalance,
+              totalBalance: payload.totalBalance,
+              averageBalance: Math.round(payload.totalBalance / payload.servicesCount),
+              servicesCodes: payload.servicesCodes.join(',')
+            }
+          })
+        })
+          .then(res => res.json())
+          .then((response) => {
+            if (response.data) {
+              this.$toast.success('Período de corte por balance creado exitosamente')
+              resolve(response.data)
+            } else {
+              reject(new Error(`Error en respuesta del servidor: ${JSON.stringify(response.error || response)}`))
+            }
+          })
+          .catch((error) => {
+            reject(new Error(`Error al crear período de corte: ${error.message}`))
+          })
+      })
+    } catch (error) {
+      throw new Error(`CREATE BILLING PERIOD WITH BALANCE ACTION ${error}`)
+    }
+  },
+  updateBillingPeriodMetrics ({ commit }, payload) {
+    try {
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}billingperiods/${payload.billingPeriodId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${payload.token}`
+          },
+          body: JSON.stringify({
+            data: {
+              errors: payload.errors,
+              errorList: payload.errorList,
+              successes: payload.successes,
+              finished: payload.finished
+            }
+          })
+        })
+          .then(res => res.json())
+          .then(({ data: billingperiod }) => {
+            resolve(billingperiod)
+          })
+          .catch((error) => {
+            reject(new Error(`Error al actualizar métricas: ${error.message}`))
+          })
+      })
+    } catch (error) {
+      throw new Error(`UPDATE BILLING PERIOD METRICS ACTION ${error}`)
+    }
+  },
+  getAdvancedBillingPeriodStats ({ commit }, payload) {
+    try {
+      const qs = require('qs')
+      const query = qs.stringify({
+        filters: {
+          city: {
+            name: payload.city
+          },
+          clienttype: {
+            name: payload.clienttype
+          }
+        },
+        pagination: {
+          pageSize: 24 // últimos 2 años
+        },
+        populate: ['city', 'clienttype'],
+        sort: 'createdAt:desc'
+      },
+      {
+        encodeValuesOnly: true
+      })
+
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}billingperiods?${query}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${payload.token}`
+          }
+        })
+          .then(res => res.json())
+          .then(({ data: billingperiods }) => {
+            // Calcular estadísticas avanzadas con todos los campos disponibles
+            const stats = {
+              totalPeriods: billingperiods.length,
+              finishedPeriods: billingperiods.filter(bp => bp.finished).length,
+              totalServices: billingperiods.reduce((sum, bp) => sum + (bp.successes || 0), 0),
+              totalErrors: billingperiods.reduce((sum, bp) => sum + (bp.errors || 0), 0),
+              totalBalance: billingperiods.reduce((sum, bp) => sum + (bp.totalBalance || 0), 0),
+              averageServicesPerPeriod: billingperiods.length > 0
+                ? Math.round(billingperiods.reduce((sum, bp) => sum + (bp.successes || 0), 0) / billingperiods.length) : 0,
+              lastPeriod: billingperiods[0] || null,
+              balanceProcesses: billingperiods.filter(bp => bp.processType === 'balance').length,
+              manualProcesses: billingperiods.filter(bp => bp.processType !== 'balance' || !bp.processType).length
+            }
+
+            resolve({
+              billingperiods,
+              stats
+            })
+          })
+          .catch((error) => {
+            reject(new Error(`Error al obtener estadísticas avanzadas: ${error.message}`))
+          })
+      })
+    } catch (error) {
+      throw new Error(`GET ADVANCED BILLING PERIOD STATS ACTION ${error}`)
+    }
+  },
+  checkExistingBillingPeriod ({ commit }, payload) {
+    try {
+      const qs = require('qs')
+      const query = qs.stringify({
+        filters: {
+          $and: [
+            {
+              city: {
+                name: payload.city
+              }
+            },
+            {
+              clienttype: {
+                name: payload.clienttype
+              }
+            },
+            {
+              month: payload.month
+            },
+            {
+              year: payload.year
+            },
+            {
+              processType: payload.processType || 'balance'
+            }
+          ]
+        },
+        populate: ['city', 'clienttype'],
+        sort: 'createdAt:desc'
+      },
+      {
+        encodeValuesOnly: true
+      })
+
+      return new Promise((resolve, reject) => {
+        fetch(`${this.$config.API_STRAPI_ENDPOINT}billingperiods?${query}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${payload.token}`
+          }
+        })
+          .then(res => res.json())
+          .then(({ data: existingPeriods }) => {
+            resolve({
+              exists: existingPeriods.length > 0,
+              periods: existingPeriods,
+              latest: existingPeriods[0] || null
+            })
+          })
+          .catch((error) => {
+            reject(new Error(`Error al verificar períodos existentes: ${error.message}`))
+          })
+      })
+    } catch (error) {
+      throw new Error(`CHECK EXISTING BILLING PERIOD ACTION ${error}`)
+    }
+  }
+}
+export const getters = {
+  serviciosYaCortados: (state) => {
+    return state.servicesData.services.filter(service => service.estadoCorte === 'cortado')
+  },
+  serviciosPendientes: (state) => {
+    return state.servicesData.services.filter(service => service.estadoCorte === 'pendiente')
+  },
+  totalServicios: (state) => {
+    return state.servicesData.services.length
   }
 }

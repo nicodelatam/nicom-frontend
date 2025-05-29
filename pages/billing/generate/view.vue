@@ -336,7 +336,7 @@ export default {
         // Double-check if data is sufficient
         if (!serviceData || !invoiceData || !serviceData.phone || !invoiceData.offer) {
           console.warn(`Skipping retry for Invoice ID ${invoice.id}: Missing required data (service, phone, or offer).`)
-          this.$toast.warning(`Saltando reintento Fac #${invoice.id}: Datos incompletos.`, { duration: 3000 })
+          this.$toast.info(`Saltando reintento Fac #${invoice.id}: Datos incompletos.`, { duration: 3000 })
           continue
         }
 
@@ -424,7 +424,7 @@ export default {
       } catch (error) {
         console.error(`Background Error updating WhatsApp status for invoice ${invoiceId}:`, error)
         // Maybe a single summary toast at the end if many updates fail?
-        this.$toast.warning(`Fallo al actualizar estado en BD para Fac #${invoiceId}. Reintento puede ocurrir de nuevo.`, { duration: 4000 })
+        this.$toast.info(`Fallo al actualizar estado en BD para Fac #${invoiceId}. Reintento puede ocurrir de nuevo.`, { duration: 4000 })
       }
     },
 
