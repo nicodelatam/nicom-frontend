@@ -49,7 +49,7 @@
             outlined
             type="number"
             label="Saldo mínimo para corte (COP)"
-            hint="Servicios con este saldo o mayor serán incluidos en el corte"
+            hint="Servicios con este saldo real (calculado desde facturas pendientes) o mayor serán incluidos"
             persistent-hint
             :rules="[rules.required, rules.positive]"
             prepend-inner-icon="mdi-currency-usd"
@@ -84,7 +84,7 @@
                       outlined
                       type="number"
                       label="Saldo máximo (opcional)"
-                      hint="Limitar búsqueda hasta este saldo"
+                      hint="Limitar búsqueda hasta este saldo real calculado"
                       persistent-hint
                       prepend-inner-icon="mdi-currency-usd-off"
                     />
@@ -659,14 +659,21 @@ export default {
         // Verificar si ya existe un proceso del mismo mes (si no se permite duplicados)
         if (!this.permitirDuplicados) {
           const currentDate = new Date()
-          const existingCheck = await this.$store.dispatch('cuts/checkExistingBillingPeriod', {
+          const checkPayload = {
             token: this.$store.state.auth.token,
             city: this.$route.query.city,
             clienttype: this.$route.query.clienttype,
             month: currentDate.getMonth() + 1,
             year: currentDate.getFullYear(),
             processType: 'balance'
-          })
+          }
+
+          // Solo agregar company si está presente en la query
+          if (this.$route.query.company) {
+            checkPayload.company = this.$route.query.company
+          }
+
+          const existingCheck = await this.$store.dispatch('cuts/checkExistingBillingPeriod', checkPayload)
 
           if (existingCheck.exists) {
             this.existingProcess = existingCheck.latest
@@ -686,14 +693,21 @@ export default {
     },
 
     async fetchServices () {
-      const services = await this.$store.dispatch('cuts/getServicesByBalance', {
+      const servicePayload = {
         token: this.$store.state.auth.token,
         city: this.$route.query.city,
         clienttype: this.$route.query.clienttype,
         minimumBalance: this.minimumBalance,
         incluirCortados: this.incluirCortados,
         filters: this.filters
-      })
+      }
+
+      // Solo agregar company si está presente en la query
+      if (this.$route.query.company) {
+        servicePayload.company = this.$route.query.company
+      }
+
+      const services = await this.$store.dispatch('cuts/getServicesByBalance', servicePayload)
 
       this.foundServices = services || []
 
@@ -844,7 +858,8 @@ export default {
         Teléfono: service.normalized_client?.phone || service.phone || 'N/A',
         Dirección: service.address || 'N/A',
         Barrio: service.neighborhood || 'N/A',
-        Saldo: service.balance || 0,
+        'Saldo Real': service.balance || 0,
+        'Facturas Pendientes': service.unpaidInvoicesCount || 0,
         Estrato: service.stratum || 'N/A',
         Plan: service.plan?.name || 'N/A',
         'Último Período': service.billingmonth && service.billingyear
@@ -858,13 +873,15 @@ export default {
         ['Fecha de generación:', new Date().toLocaleString('es-CO')],
         ['Ciudad:', this.$route.query.city],
         ['Tipo de cliente:', this.$route.query.clienttype],
-        ['Método:', this.selectionMethod === 'balance' ? 'Automático por Balance' : 'Manual por Códigos'],
+        ['Empresa:', this.$route.query.company || 'No especificada'],
+        ['Método:', this.selectionMethod === 'balance' ? 'Automático por Balance Real' : 'Manual por Códigos'],
         [''],
         ['RESUMEN:'],
         ['Total de servicios:', this.foundServices.length],
         ['Saldo mínimo:', this.formatCurrency(this.minimumBalance)],
-        ['Saldo total:', this.formatCurrency(this.totalBalance)],
+        ['Saldo total (calculado):', this.formatCurrency(this.totalBalance)],
         ['Promedio por servicio:', this.formatCurrency(this.averageBalance)],
+        ['Total facturas pendientes:', this.foundServices.reduce((sum, s) => sum + (s.unpaidInvoicesCount || 0), 0)],
         [''],
         ['FILTROS APLICADOS:']
       ]

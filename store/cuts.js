@@ -564,7 +564,7 @@ export const actions = {
     try {
       const qs = require('qs')
 
-      // Construir filtros dinámicamente
+      // Construir filtros dinámicamente - removemos el filtro de balance obsoleto
       const filters = {
         $and: [
           {
@@ -572,13 +572,15 @@ export const actions = {
           },
           {
             clienttype: { name: payload.clienttype }
-          },
-          {
-            balance: {
-              $gte: payload.minimumBalance
-            }
           }
         ]
+      }
+
+      // Filtrar por empresa para evitar mezclar clientes de diferentes empresas
+      if (payload.company) {
+        filters.$and.push({
+          company: { name: payload.company }
+        })
       }
 
       // Por defecto, solo mostrar servicios activos
@@ -597,14 +599,6 @@ export const actions = {
 
       // Agregar filtros adicionales si están definidos
       if (payload.filters) {
-        if (payload.filters.maxBalance) {
-          filters.$and.push({
-            balance: {
-              $lte: payload.filters.maxBalance
-            }
-          })
-        }
-
         if (payload.filters.stratum) {
           filters.$and.push({
             stratum: payload.filters.stratum
@@ -645,9 +639,10 @@ export const actions = {
           'service_addresses',
           'service_addresses.neighborhood',
           'plan',
-          'offer'
+          'offer',
+          'invoices'
         ],
-        sort: 'balance:desc'
+        sort: 'code:asc'
       },
       {
         encodeValuesOnly: true
@@ -663,17 +658,38 @@ export const actions = {
         })
           .then(res => res.json())
           .then(({ data: services }) => {
-            // Filtrar servicios que realmente tengan el balance requerido
-            let filteredServices = services.filter(service =>
-              service.balance && service.balance >= payload.minimumBalance
+            // Calcular saldo real desde facturas no pagadas
+            let filteredServices = services.map((service) => {
+              // Calcular balance real desde invoices no pagadas
+              const unpaidInvoices = service.invoices?.filter(invoice =>
+                invoice.payed === false && invoice.balance > 0
+              ) || []
+              const realBalance = unpaidInvoices.reduce((sum, invoice) =>
+                sum + (invoice.balance || 0), 0
+              )
+
+              return {
+                ...service,
+                balance: realBalance, // Reemplazar con el balance calculado
+                unpaidInvoicesCount: unpaidInvoices.length,
+                invoices: unpaidInvoices // Solo mantener las facturas no pagadas
+              }
+            })
+
+            // Filtrar servicios que realmente tengan el balance mínimo requerido
+            filteredServices = filteredServices.filter(service =>
+              service.balance >= payload.minimumBalance
             )
 
-            // Aplicar filtro de saldo máximo en el frontend como respaldo
+            // Aplicar filtro de saldo máximo si está definido
             if (payload.filters && payload.filters.maxBalance) {
               filteredServices = filteredServices.filter(service =>
                 service.balance <= payload.filters.maxBalance
               )
             }
+
+            // Ordenar por balance descendente
+            filteredServices.sort((a, b) => b.balance - a.balance)
 
             // Agregar información de estado usando la lógica correcta del negocio
             filteredServices = filteredServices.map((service) => {
@@ -842,31 +858,45 @@ export const actions = {
   checkExistingBillingPeriod ({ commit }, payload) {
     try {
       const qs = require('qs')
-      const query = qs.stringify({
-        filters: {
-          $and: [
-            {
-              city: {
-                name: payload.city
-              }
-            },
-            {
-              clienttype: {
-                name: payload.clienttype
-              }
-            },
-            {
-              month: payload.month
-            },
-            {
-              year: payload.year
-            },
-            {
-              processType: payload.processType || 'balance'
+
+      // Construir filtros dinámicamente
+      const filters = {
+        $and: [
+          {
+            city: {
+              name: payload.city
             }
-          ]
-        },
-        populate: ['city', 'clienttype'],
+          },
+          {
+            clienttype: {
+              name: payload.clienttype
+            }
+          },
+          {
+            month: payload.month
+          },
+          {
+            year: payload.year
+          },
+          {
+            processType: payload.processType || 'balance'
+          }
+        ]
+      }
+
+      // Agregar filtro de empresa si está disponible
+      // Nota: Solo agregar si el modelo billingperiod tiene relación con company
+      if (payload.company) {
+        filters.$and.push({
+          company: {
+            name: payload.company
+          }
+        })
+      }
+
+      const query = qs.stringify({
+        filters,
+        populate: ['city', 'clienttype', 'company'],
         sort: 'createdAt:desc'
       },
       {
@@ -881,20 +911,40 @@ export const actions = {
             Authorization: `Bearer ${payload.token}`
           }
         })
-          .then(res => res.json())
-          .then(({ data: existingPeriods }) => {
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+            }
+            return res.json()
+          })
+          .then((response) => {
+            // Manejar diferentes estructuras de respuesta de Strapi
+            const existingPeriods = response.data || response || []
+
             resolve({
-              exists: existingPeriods.length > 0,
+              exists: Array.isArray(existingPeriods) && existingPeriods.length > 0,
               periods: existingPeriods,
-              latest: existingPeriods[0] || null
+              latest: Array.isArray(existingPeriods) && existingPeriods.length > 0 ? existingPeriods[0] : null
             })
           })
           .catch((error) => {
-            reject(new Error(`Error al verificar períodos existentes: ${error.message}`))
+            console.error('Error en checkExistingBillingPeriod:', error)
+            // En caso de error, asumir que no existen períodos previos para permitir continuar
+            resolve({
+              exists: false,
+              periods: [],
+              latest: null
+            })
           })
       })
     } catch (error) {
-      throw new Error(`CHECK EXISTING BILLING PERIOD ACTION ${error}`)
+      console.error('Error en checkExistingBillingPeriod (catch):', error)
+      // En caso de error, retornar valores seguros
+      return Promise.resolve({
+        exists: false,
+        periods: [],
+        latest: null
+      })
     }
   }
 }
