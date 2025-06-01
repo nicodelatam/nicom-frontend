@@ -43,8 +43,6 @@ export const mutations = {
 }
 export const actions = {
   sendWhatsapp ({ commit }, payload) {
-    console.log(payload)
-
     // Support both new format (service) and old format (client)
     const serviceData = payload.service || payload.client
     const phoneNumber = serviceData.phone || serviceData.normalized_client?.phone
@@ -103,8 +101,8 @@ export const actions = {
                     {
                       type: 'image',
                       image: {
-                        link: 'https://gteltelecomunicaciones.com/test.jpg'
-                        // link: this.$config.CDN_STRAPI_ENDPOINT + payload.imgPath
+                        // link: 'https://gteltelecomunicaciones.com/test.jpg'
+                        link: this.$config.CDN_STRAPI_ENDPOINT + payload.imgPath
                       }
                     }
                   ]
