@@ -2,7 +2,13 @@
   <v-container fluid>
     <v-card class="mb-4 rounded-xl mx-auto elevation-0">
       <v-card-title class="text-center justify-center">
-        <strong class="mr-1">Preparación</strong> - Generar estados de cuenta para {{ activeServices.length }} servicios
+        <strong class="mr-1">Preparación</strong> -
+        <span v-if="!includeAlreadyBilled">
+          Generar estados de cuenta para {{ activeServices.length }} servicios
+        </span>
+        <span v-else>
+          Revisar/procesar {{ activeServices.length }} servicios (incluye ya facturados)
+        </span>
       </v-card-title>
 
       <v-card-text>
@@ -14,7 +20,10 @@
         >
           <v-row align="center">
             <v-col cols="12" sm="8">
-              <div>Cargando servicios activos para el mes de {{ getMonthName() }} {{ year }}...</div>
+              <div>
+                Cargando servicios activos para el mes de {{ getMonthName() }} {{ year }}
+                <span v-if="includeAlreadyBilled">(incluyendo ya facturados)</span>...
+              </div>
               <div class="text-caption mt-1">
                 Este proceso puede tardar unos momentos dependiendo de la cantidad de servicios.
               </div>
@@ -35,7 +44,12 @@
           dense
           outlined
         >
-          No hay servicios activos para generar estados de cuenta. Regrese y seleccione otro período.
+          <span v-if="!includeAlreadyBilled">
+            No hay servicios activos para generar estados de cuenta. Regrese y seleccione otro período.
+          </span>
+          <span v-else>
+            No hay servicios activos para el período seleccionado (incluyendo ya facturados).
+          </span>
         </v-alert>
 
         <v-alert
@@ -44,8 +58,33 @@
           dense
           outlined
         >
-          Se generarán estados de cuenta para el mes de {{ getMonthName() }} {{ year }} con fecha límite {{ formatDate(limit) }}
+          <span v-if="!includeAlreadyBilled">
+            Se generarán estados de cuenta para el mes de {{ getMonthName() }} {{ year }} con fecha límite {{ formatDate(limit) }}
+          </span>
+          <span v-else>
+            Revisando servicios del mes de {{ getMonthName() }} {{ year }} (incluyendo ya facturados) para generar imágenes faltantes o reenvíos
+          </span>
         </v-alert>
+
+        <!-- Switch para incluir servicios ya facturados -->
+        <v-row class="mt-4">
+          <v-col>
+            <v-switch
+              v-model="includeAlreadyBilled"
+              :loading="loading"
+              color="orange darken-2"
+              label="Incluir servicios ya facturados del mes (para generar imágenes faltantes)"
+              hide-details
+              @change="onIncludeAlreadyBilledChange"
+            />
+            <div v-if="includeAlreadyBilled" class="text-caption orange--text text--darken-2 mt-1">
+              <v-icon small color="orange darken-2">
+                mdi-information-outline
+              </v-icon>
+              Los servicios ya facturados se mostrarán para poder generar imágenes faltantes o reenvíos.
+            </div>
+          </v-col>
+        </v-row>
 
         <div class="d-flex justify-space-between flex-wrap mt-4">
           <v-btn
@@ -79,7 +118,12 @@
               :disabled="loading || selectedServices.length === 0"
               @click="continueToProcess"
             >
-              Procesar {{ selectedServices.length }} facturas
+              <span v-if="!includeAlreadyBilled">
+                Procesar {{ selectedServices.length }} facturas
+              </span>
+              <span v-else>
+                Revisar {{ selectedServices.length }} servicios
+              </span>
               <v-icon right>
                 mdi-arrow-right
               </v-icon>
@@ -96,7 +140,8 @@
     />
     <v-card v-else-if="activeServices.length > 0" class="rounded-xl elevation-0">
       <v-card-title class="d-flex align-center">
-        <span>Lista de servicios a facturar</span>
+        <span v-if="!includeAlreadyBilled">Lista de servicios a facturar</span>
+        <span v-else>Lista de servicios (incluye ya facturados)</span>
         <v-spacer />
         <v-text-field
           v-model="search"
@@ -146,6 +191,18 @@
             <strong>{{ item.existingInvoiceId ? 'YA GENERADA' : 'POR GENERAR' }}</strong>
           </v-chip>
         </template>
+        <template v-slot:[`item.imageStatus`]="{ item }">
+          <v-chip
+            :color="getImageStatusColor(item)"
+            small
+            text-color="white"
+          >
+            <v-icon small left>
+              {{ getImageStatusIcon(item) }}
+            </v-icon>
+            <strong>{{ getImageStatusText(item) }}</strong>
+          </v-chip>
+        </template>
         <template v-slot:footer>
           <div class="d-flex justify-end pa-2">
             <span class="text-subtitle-1">
@@ -174,8 +231,10 @@ export default {
         { text: 'Plan', value: 'offer.name', sortable: true },
         { text: 'Valor', value: 'offer.price', sortable: true },
         { text: 'Estado Servicio', value: 'active', sortable: false },
-        { text: 'Estado Factura', value: 'invoiceStatus', sortable: false }
-      ]
+        { text: 'Estado Factura', value: 'invoiceStatus', sortable: false },
+        { text: 'Estado Imagen', value: 'imageStatus', sortable: false }
+      ],
+      includeAlreadyBilled: false
     }
   },
 
@@ -251,7 +310,8 @@ export default {
           active: true,
           indebt: false,
           month: this.month.value,
-          year: this.year
+          year: this.year,
+          includeAlreadyBilled: this.includeAlreadyBilled
         })
       } catch (error) {
         console.error('Error cargando servicios:', error)
@@ -292,6 +352,48 @@ export default {
         query: this.$route.query // Pass along query params
       })
       // No need to set processingLoading back to false, as we are navigating away
+    },
+
+    onIncludeAlreadyBilledChange () {
+      // Reload services when the switch changes
+      this.getListOfActiveServices()
+    },
+
+    getImageStatusColor (item) {
+      const hasImage = this.hasInvoiceImage(item)
+      if (!item.existingInvoiceId) {
+        return 'grey' // No tiene factura aún
+      }
+      return hasImage ? 'success' : 'warning'
+    },
+
+    getImageStatusIcon (item) {
+      const hasImage = this.hasInvoiceImage(item)
+      if (!item.existingInvoiceId) {
+        return 'mdi-minus-circle' // No aplica
+      }
+      return hasImage ? 'mdi-check-circle' : 'mdi-alert-circle'
+    },
+
+    getImageStatusText (item) {
+      const hasImage = this.hasInvoiceImage(item)
+      if (!item.existingInvoiceId) {
+        return 'N/A' // No tiene factura
+      }
+      return hasImage ? 'CON IMAGEN' : 'SIN IMAGEN'
+    },
+
+    hasInvoiceImage (item) {
+      if (!item.existingInvoiceId || !item.invoices) {
+        return false
+      }
+      // Buscar la factura específica del mes/año actual
+      const targetInvoice = item.invoices.find(invoice =>
+        invoice.month === this.month.value &&
+        invoice.year === this.year &&
+        invoice.id === item.existingInvoiceId
+      )
+      return targetInvoice && targetInvoice.image && targetInvoice.image.url
     }
   }
 }

@@ -134,6 +134,15 @@
             {{ getSendStatusText(item) }}
           </v-chip>
         </template>
+        <!-- Template for Image Status -->
+        <template v-slot:[`item.imageStatus`]="{ item }">
+          <v-chip small :color="getImageStatusColor(item)" text-color="white">
+            <v-icon small left>
+              {{ getImageStatusIcon(item) }}
+            </v-icon>
+            {{ getImageStatusText(item) }}
+          </v-chip>
+        </template>
       </v-data-table>
     </v-card>
   </v-container>
@@ -158,7 +167,8 @@ export default {
         { text: 'Cliente', value: 'client_name', sortable: true },
         { text: 'Celular', value: 'phone', sortable: false },
         { text: 'Estado Generación', value: 'generationStatus', sortable: false },
-        { text: 'Estado Envío WhatsApp', value: 'messageSent', sortable: false }
+        { text: 'Estado Envío WhatsApp', value: 'messageSent', sortable: false },
+        { text: 'Estado Imagen', value: 'imageStatus', sortable: false }
       ]
       // Note: Old counters like generatedBills, omitedBills, alreadyBilled, sendIndex are removed
       // They are replaced by computed properties based on 'processedItems'
@@ -286,6 +296,61 @@ export default {
       return 'cyan darken-3' // Default cyan for pending send
     },
 
+    // --- Image Status Helpers ---
+    getImageStatusColor (item) {
+      const hasImage = this.hasInvoiceImage(item)
+      if (!item.invoiceId && !item.existingInvoiceId) {
+        return 'grey lighten-2' // No tiene factura
+      }
+      if (item.generationError || item.skippedNoOffer) {
+        return 'grey lighten-2' // N/A
+      }
+      return hasImage ? 'success' : 'orange darken-2'
+    },
+
+    getImageStatusIcon (item) {
+      const hasImage = this.hasInvoiceImage(item)
+      if (!item.invoiceId && !item.existingInvoiceId) {
+        return 'mdi-minus-circle' // No aplica
+      }
+      if (item.generationError || item.skippedNoOffer) {
+        return 'mdi-minus-circle' // N/A
+      }
+      return hasImage ? 'mdi-check-circle' : 'mdi-alert-circle'
+    },
+
+    getImageStatusText (item) {
+      const hasImage = this.hasInvoiceImage(item)
+      if (!item.invoiceId && !item.existingInvoiceId) {
+        return 'N/A' // No tiene factura
+      }
+      if (item.generationError || item.skippedNoOffer) {
+        return 'N/A' // No aplica
+      }
+      return hasImage ? 'CON IMAGEN' : 'SIN IMAGEN'
+    },
+
+    hasInvoiceImage (item) {
+      // Si no tiene factura, retorna false
+      if (!item.invoiceId && !item.existingInvoiceId) {
+        return false
+      }
+
+      // Si ya tenemos los datos de la factura y tiene imagen
+      if (item.invoiceData && item.invoiceData.image && item.invoiceData.image.url) {
+        return true
+      }
+
+      // Para facturas preexistentes, verificar si tiene imagen
+      if (item.existingInvoiceId && item.invoices) {
+        const existingInvoice = item.invoices.find(inv => inv.id === item.existingInvoiceId)
+        return existingInvoice && existingInvoice.image && existingInvoice.image.url
+      }
+
+      // Por defecto, asumir que no tiene imagen si no se puede verificar
+      return false
+    },
+
     // --- Core Logic ---
     checkIfGenerationIsComplete () {
       // Generation is complete if every item either has an existing invoice,
@@ -407,6 +472,12 @@ export default {
               const imageInfo = await this.generateImageFromBill(createdInvoice, item)
               if (imageInfo && imageInfo[0]?.url) {
                 this.$toast.success(`Imagen generada para factura #${createdInvoice.id}`, { duration: 3000 })
+                // Update the invoice data with the generated image
+                if (item.invoiceData) {
+                  item.invoiceData.image = imageInfo[0]
+                } else {
+                  item.invoiceData = { ...createdInvoice, image: imageInfo[0] }
+                }
               }
             }
           } catch (imageError) {
@@ -722,6 +793,8 @@ export default {
               const imageInfo = await this.generateImageFromBill(createdInvoice, activeService)
               if (imageInfo && imageInfo[0]?.url) {
                 this.$toast.success(`Imagen generada para factura con saldo a favor #${createdInvoice.id}`, { duration: 3000 })
+                // Update the created invoice with image info
+                createdInvoice.image = imageInfo[0]
               }
             }
           } catch (imageError) {
@@ -798,6 +871,8 @@ export default {
               const imageInfo = await this.generateImageFromBill(createdInvoice, activeService)
               if (imageInfo && imageInfo[0]?.url) {
                 this.$toast.success(`Imagen generada para factura con saldo parcial #${createdInvoice.id}`, { duration: 3000 })
+                // Update the created invoice with image info
+                createdInvoice.image = imageInfo[0]
               }
             }
           } catch (imageError) {
@@ -1131,6 +1206,18 @@ export default {
             if (imageInfo && imageInfo[0]?.url) {
               this.$toast.success(`[${i + 1}/${totalCount}] Imagen generada para factura #${invoice.id}`, { duration: 1500 })
               successCount++
+
+              // Update any matching item in processedItems if it exists
+              const matchingItem = this.processedItems.find(item =>
+                (item.invoiceId === invoice.id || item.existingInvoiceId === invoice.id)
+              )
+              if (matchingItem) {
+                if (matchingItem.invoiceData) {
+                  matchingItem.invoiceData.image = imageInfo[0]
+                } else {
+                  matchingItem.invoiceData = { ...invoice, image: imageInfo[0] }
+                }
+              }
             } else {
               throw new Error('No se pudo generar la imagen')
             }

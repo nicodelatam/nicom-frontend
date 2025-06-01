@@ -867,44 +867,58 @@ export const actions = {
   getListOfActiveServices ({ commit }, payload) {
     let nfilter = []
     const currentYear = new Date().getFullYear()
-    if (payload.year > currentYear) {
-      nfilter = [
-        {
-          billingyear: {
-            $lte: payload.year
+
+    // Si includeAlreadyBilled es true, no aplicamos el filtro de billingmonth
+    if (!payload.includeAlreadyBilled) {
+      if (payload.year > currentYear) {
+        nfilter = [
+          {
+            billingyear: {
+              $lte: payload.year
+            }
+          },
+          {
+            billingmonth: {
+              $gte: payload.month
+            }
           }
-        },
-        {
-          billingmonth: {
-            $gte: payload.month
+        ]
+      } else {
+        nfilter = [
+          {
+            billingyear: {
+              $lte: payload.year
+            }
+          },
+          {
+            billingmonth: {
+              $ne: payload.month
+            }
           }
-        }
-      ]
-    } else {
-      nfilter = [
-        {
-          billingyear: {
-            $lte: payload.year
-          }
-        },
-        {
-          billingmonth: {
-            $ne: payload.month
-          }
-        }
-      ]
+        ]
+      }
     }
+
     const qs = require('qs')
-    const query = qs.stringify({
-      filters: {
-        active: payload.active,
-        indebt: payload.indebt,
-        city: {
-          name: payload.city
-        },
-        clienttype: {
-          name: payload.clienttype
-        },
+
+    // Construir filtros base
+    const baseFilters = {
+      active: payload.active,
+      indebt: payload.indebt,
+      city: {
+        name: payload.city
+      },
+      clienttype: {
+        name: payload.clienttype
+      }
+    }
+
+    // Si includeAlreadyBilled es true, solo usamos filtros base
+    // Si es false, agregamos los filtros de billing period
+    const filters = payload.includeAlreadyBilled
+      ? baseFilters
+      : {
+        ...baseFilters,
         $or: [
           {
             $and: nfilter
@@ -924,7 +938,10 @@ export const actions = {
             ]
           }
         ]
-      },
+      }
+
+    const query = qs.stringify({
+      filters,
       pagination: {
         pageSize: 5000
       },
@@ -944,6 +961,19 @@ export const actions = {
         })
           .then(res => res.json())
           .then(({ data: services }) => {
+            // Si includeAlreadyBilled es true, necesitamos marcar qué servicios ya tienen factura
+            if (payload.includeAlreadyBilled) {
+              services.forEach((service) => {
+                // Buscar si ya tiene factura para este mes/año
+                const existingInvoice = service.invoices?.find(invoice =>
+                  invoice.month === payload.month && invoice.year === payload.year
+                )
+                if (existingInvoice) {
+                  service.existingInvoiceId = existingInvoice.id
+                }
+              })
+            }
+
             commit('getListOfActiveServices', services)
             resolve(services)
           })
