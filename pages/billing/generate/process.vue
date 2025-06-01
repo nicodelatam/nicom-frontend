@@ -83,6 +83,18 @@
                 Regresar
               </v-btn>
               <v-btn
+                color="orange darken-2"
+                class="mr-2"
+                :loading="loadingGenerateImages"
+                :disabled="loadingGenerate || loadingSend || !month || !year"
+                @click="generateMissingImages"
+              >
+                <v-icon left>
+                  mdi-image-plus
+                </v-icon>
+                Generar Imágenes Faltantes
+              </v-btn>
+              <v-btn
                 color="success"
                 :disabled="loadingGenerate || loadingSend"
                 @click="exit"
@@ -136,6 +148,7 @@ export default {
     return {
       loadingGenerate: false,
       loadingSend: false,
+      loadingGenerateImages: false,
       isGenerationComplete: false, // Flag to indicate if generation process finished (or skipped)
       // Local state to track progress for each item selected in prepare.vue
       processedItems: [],
@@ -322,14 +335,12 @@ export default {
 
         // 3. Process Balances in Favor (Re-integrated)
         try {
-          const balanceApplied = await this.processBalancesInFavor(item)
-          if (balanceApplied) {
-            this.$toast.success(`Saldo a favor aplicado para ${item.code}. Factura generada/actualizada.`, { duration: 4000 })
-            // Mark as generated, even though we don't get the ID directly here.
-            // Assume an invoice was created/updated and paid.
-            // We might need more robust status updates depending on Vuex action returns.
-            item.invoiceId = 'saldo_aplicado' // Placeholder ID
-            item.invoiceData = { id: 'saldo_aplicado', payed: true } // Placeholder data
+          const createdInvoiceId = await this.processBalancesInFavor(item)
+          if (createdInvoiceId) {
+            this.$toast.success(`Saldo a favor aplicado para ${item.code}. Factura #${createdInvoiceId} generada.`, { duration: 4000 })
+            // Set the actual invoice ID returned from the balance process
+            item.invoiceId = createdInvoiceId
+            item.invoiceData = { id: createdInvoiceId, payed: true } // Simplified data for now
             generatedCount++ // Count this as a generated invoice
             continue // Skip regular invoice creation
           }
@@ -388,6 +399,20 @@ export default {
           item.invoiceId = createdInvoice.id
           item.invoiceData = createdInvoice // Store the created invoice data
           generatedCount++
+
+          // --- Generate Image for Invoice (NEW) ---
+          // Generate image immediately after creating the invoice
+          try {
+            if (this.currentCompany.meta_template) {
+              const imageInfo = await this.generateImageFromBill(createdInvoice, item)
+              if (imageInfo && imageInfo[0]?.url) {
+                this.$toast.success(`Imagen generada para factura #${createdInvoice.id}`, { duration: 3000 })
+              }
+            }
+          } catch (imageError) {
+            console.error(`Error generating image for invoice ${createdInvoice.id}:`, imageError)
+            // Continue processing even if image generation fails
+          }
 
           // --- Post-Invoice Creation Steps (Sync) ---
           // These were previously inside the loop but might be better here or batched
@@ -690,6 +715,20 @@ export default {
           })
           createdInvoice = recentInvoice
 
+          // --- Generate Image for Balance Invoice (NEW) ---
+          // Generate image immediately after creating the invoice via balance
+          try {
+            if (this.currentCompany.meta_template) {
+              const imageInfo = await this.generateImageFromBill(createdInvoice, activeService)
+              if (imageInfo && imageInfo[0]?.url) {
+                this.$toast.success(`Imagen generada para factura con saldo a favor #${createdInvoice.id}`, { duration: 3000 })
+              }
+            }
+          } catch (imageError) {
+            console.error(`Error generating image for balance invoice ${createdInvoice.id}:`, imageError)
+            // Continue processing even if image generation fails
+          }
+
           const legalNote = {
             city: this.$route.query.city,
             clienttype: this.$route.query.clienttype,
@@ -752,6 +791,20 @@ export default {
           })
           createdInvoice = recentInvoice
 
+          // --- Generate Image for Partial Balance Invoice (NEW) ---
+          // Generate image immediately after creating the invoice via partial balance
+          try {
+            if (this.currentCompany.meta_template) {
+              const imageInfo = await this.generateImageFromBill(createdInvoice, activeService)
+              if (imageInfo && imageInfo[0]?.url) {
+                this.$toast.success(`Imagen generada para factura con saldo parcial #${createdInvoice.id}`, { duration: 3000 })
+              }
+            }
+          } catch (imageError) {
+            console.error(`Error generating image for partial balance invoice ${createdInvoice.id}:`, imageError)
+            // Continue processing even if image generation fails
+          }
+
           // REVIEW: Ensure createLegalNote action uses { data: { ... } }
           const legalNote = {
             city: this.$route.query.city,
@@ -808,22 +861,23 @@ export default {
       const validBalances = Array.isArray(balancesInFavor) ? balancesInFavor.filter(b => b.balance > 0) : []
 
       if (validBalances.length < 1) {
-        return false // No valid balances to apply
+        return null // No valid balances to apply
       }
 
       this.$toast.info(`Aplicando ${validBalances.length} saldo(s) a favor para ${activeService.code}...`, { duration: 3000 })
 
-      let appliedSuccessfully = false
+      let createdInvoiceId = null
       for (const balanceInFavor of validBalances) {
         // Apply them one by one
         // If any fails, the error should propagate from applyBalanceInFavorToInvoiceAndCreateLegalNote
-        await this.applyBalanceInFavorToInvoiceAndCreateLegalNote(activeService, balanceInFavor)
-        appliedSuccessfully = true // Mark true if at least one attempt was made and didn't throw error immediately
+        const invoiceId = await this.applyBalanceInFavorToInvoiceAndCreateLegalNote(activeService, balanceInFavor)
+        if (invoiceId && !createdInvoiceId) {
+          createdInvoiceId = invoiceId // Store the first created invoice ID
+        }
       }
 
-      // Returns true if *any* balance was processed (even if errors occurred later in related steps)
-      // The generateBilling loop will catch the re-thrown error if applyBalance... fails.
-      return appliedSuccessfully
+      // Return the ID of the created invoice, or null if none was created
+      return createdInvoiceId
     },
 
     // --- Image Generation & Upload (Existing Methods - Review Needed) ---
@@ -1037,6 +1091,117 @@ export default {
         console.error('Error subiendo imagen:', error)
         this.$toast.error(`Error al subir imagen para Factura #${invoiceId}: ${error.message}`, { duration: 4000 })
         return null
+      }
+    },
+
+    async generateMissingImages () {
+      if (!this.month || !this.year || !this.currentCompany?.meta_template) {
+        this.$toast.error('Faltan datos requeridos (mes/año) o no hay plantilla configurada.', { duration: 4000 })
+        return
+      }
+
+      this.loadingGenerateImages = true
+      this.$toast.info(`Buscando facturas del ${this.month.text} ${this.year} sin imagen...`, { duration: 4000 })
+
+      try {
+        // 1. Fetch invoices for the selected month/year that don't have images
+        const invoicesWithoutImages = await this.fetchInvoicesWithoutImages()
+
+        if (!invoicesWithoutImages || invoicesWithoutImages.length === 0) {
+          this.$toast.success('No se encontraron facturas sin imagen para el período seleccionado.', { duration: 4000 })
+          this.loadingGenerateImages = false
+          return
+        }
+
+        this.$toast.info(`Encontradas ${invoicesWithoutImages.length} facturas sin imagen. Generando...`, { duration: 4000 })
+
+        let successCount = 0
+        let errorCount = 0
+        const totalCount = invoicesWithoutImages.length
+
+        // 2. Generate images for each invoice
+        for (let i = 0; i < invoicesWithoutImages.length; i++) {
+          const invoice = invoicesWithoutImages[i]
+          try {
+            this.$toast.info(`[${i + 1}/${totalCount}] Generando imagen para factura #${invoice.id}...`, { duration: 1500 })
+
+            // Use the existing generateImageFromBill method
+            const imageInfo = await this.generateImageFromBill(invoice, invoice.service)
+
+            if (imageInfo && imageInfo[0]?.url) {
+              this.$toast.success(`[${i + 1}/${totalCount}] Imagen generada para factura #${invoice.id}`, { duration: 1500 })
+              successCount++
+            } else {
+              throw new Error('No se pudo generar la imagen')
+            }
+          } catch (error) {
+            console.error(`Error generating image for invoice ${invoice.id}:`, error)
+            this.$toast.error(`[${i + 1}/${totalCount}] Error en factura #${invoice.id}: ${error.message}`, { duration: 2500 })
+            errorCount++
+          }
+        }
+
+        this.$toast.success(`Proceso completado para ${this.month.text} ${this.year}. Éxito: ${successCount}, Errores: ${errorCount}`, { duration: 6000 })
+      } catch (error) {
+        console.error('Error in generateMissingImages:', error)
+        this.$toast.error(`Error general: ${error.message}`, { duration: 4000 })
+      } finally {
+        this.loadingGenerateImages = false
+      }
+    },
+
+    async fetchInvoicesWithoutImages () {
+      try {
+        // Build query to find invoices for the specific month/year without images
+        const qs = require('qs')
+        const query = qs.stringify({
+          filters: {
+            month: this.month.value,
+            year: this.year,
+            image: {
+              $null: true
+            },
+            company: this.currentCompany.id
+          },
+          populate: [
+            'service',
+            'service.offer',
+            'service.normalized_client'
+          ],
+          pagination: {
+            pageSize: 1000 // Adjust as needed
+          }
+        }, {
+          encodeValuesOnly: true
+        })
+
+        const response = await fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices?${query}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.$store.state.auth.token}`
+          }
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(`API Error (${response.status}): ${errorData.error?.message || 'Failed to fetch invoices'}`)
+        }
+
+        const { data: invoices } = await response.json()
+
+        // Filter out invoices that don't have complete service data
+        const validInvoices = invoices.filter(invoice =>
+          invoice.service &&
+          invoice.service.offer &&
+          invoice.service.code
+        )
+
+        console.log(`Found ${validInvoices.length} invoices without images for ${this.month.text} ${this.year}`)
+        return validInvoices
+      } catch (error) {
+        console.error('Error fetching invoices without images:', error)
+        throw error
       }
     },
 
