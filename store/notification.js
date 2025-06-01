@@ -44,6 +44,40 @@ export const mutations = {
 export const actions = {
   sendWhatsapp ({ commit }, payload) {
     console.log(payload)
+
+    // Support both new format (service) and old format (client)
+    const serviceData = payload.service || payload.client
+    const phoneNumber = serviceData.phone || serviceData.normalized_client?.phone
+
+    // Format the limit date to Spanish format
+    const formatLimitDate = (limitDateString) => {
+      if (!limitDateString) {
+        return '27 de ' + payload.month.text // Fallback to hardcoded if no limit provided
+      }
+
+      // Parse the date string manually to avoid timezone issues
+      // Expecting format: YYYY-MM-DD
+      const dateParts = limitDateString.split('-')
+      if (dateParts.length !== 3) {
+        console.warn('Invalid date format:', limitDateString)
+        return '27 de ' + payload.month.text
+      }
+
+      const day = parseInt(dateParts[2], 10)
+      const monthIndex = parseInt(dateParts[1], 10) - 1 // Month is 0-based
+
+      const monthNames = [
+        'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+      ]
+
+      const monthName = monthNames[monthIndex]
+
+      return `${day} de ${monthName}`
+    }
+
+    const formattedLimitDate = formatLimitDate(payload.limit)
+
     return new Promise((resolve, reject) => {
       fetch(payload.metaServicesInfo.meta_endpoint, {
         method: 'POST',
@@ -55,7 +89,7 @@ export const actions = {
           {
             messaging_product: 'whatsapp',
             recipient_type: 'individual',
-            to: `57${payload.service.phone}`,
+            to: `57${phoneNumber}`,
             type: 'template',
             template: {
               name: payload.metaServicesInfo.meta_template,
@@ -69,8 +103,8 @@ export const actions = {
                     {
                       type: 'image',
                       image: {
-                        // link: 'https://gteltelecomunicaciones.com/test.jpg'
-                        link: this.$config.CDN_STRAPI_ENDPOINT + payload.imgPath
+                        link: 'https://gteltelecomunicaciones.com/test.jpg'
+                        // link: this.$config.CDN_STRAPI_ENDPOINT + payload.imgPath
                       }
                     }
                   ]
@@ -84,7 +118,7 @@ export const actions = {
                     },
                     {
                       type: 'text',
-                      text: `27 de ${payload.month.text}`
+                      text: formattedLimitDate // Use the formatted limit date instead of hardcoded
                     }
                   ]
                 }

@@ -39,7 +39,6 @@
               rounded
               dense
               hide-details="auto"
-              :value="limit"
             />
             <div class="d-flex flex-wrap mt-2 justify-center">
               <v-btn
@@ -147,13 +146,28 @@ export default {
       return this.$store.state.company.clienttypes.find(c => c.name === this.$route.query.clienttype)
     }
   },
+  watch: {
+    // Watch for changes in limit and update store immediately
+    limit (newLimit) {
+      if (newLimit) {
+        this.$store.commit('billing/setLimit', {
+          limit: newLimit
+        })
+      }
+    }
+  },
   mounted () {
     const year = new Date().getFullYear()
     this.year = year
 
     const month = new Date().getMonth()
-    const limitTOISO = new Date(year, month, 17).toISOString().substring(0, 10)
+    const limitTOISO = new Date(year, month, 18).toISOString().substring(0, 10)
     this.limit = limitTOISO
+
+    // Ensure the limit is saved to store on mount
+    this.$store.commit('billing/setLimit', {
+      limit: this.limit
+    })
   },
   methods: {
     continueToNextStep () {

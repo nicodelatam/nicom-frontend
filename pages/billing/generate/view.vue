@@ -361,6 +361,7 @@ export default {
             // Need to get month/year object matching the invoice's month/year value
             month: this.months.find(m => m.value === invoiceData.month),
             year: invoiceData.year,
+            limit: invoiceData.limit, // Pass the invoice's limit date
             token: this.token,
             metaServicesInfo,
             imgPath: imageInfo && imageInfo[0] ? imageInfo[0].url : null
@@ -457,9 +458,23 @@ export default {
         if (!response.ok) { throw new Error(`Template invoice.html not found (${response.status})`) }
         const templateHtml = await response.text()
 
+        // Función auxiliar para parsear fechas sin problemas de zona horaria
+        const parseLocalDate = (dateString) => {
+          if (!dateString) { return new Date() }
+
+          // Si es una cadena en formato YYYY-MM-DD, parseamos manualmente
+          if (typeof dateString === 'string' && dateString.includes('-')) {
+            const [year, month, day] = dateString.split('-').map(Number)
+            return new Date(year, month - 1, day) // month - 1 porque los meses son 0-based
+          }
+
+          // Si no, usar Date normal
+          return new Date(dateString)
+        }
+
         const today = new Date()
         // Use invoice limit; fallback to today + 15 days if missing?
-        const limitDate = invoice.limit ? new Date(invoice.limit) : new Date(today.setDate(today.getDate() + 15))
+        const limitDate = invoice.limit ? parseLocalDate(invoice.limit) : new Date(today.setDate(today.getDate() + 15))
 
         const emissionDateFormatted = this.formatDateLong(new Date()) // Use current date for emission? Or invoice.createdAt?
         const limitDateFormatted = this.formatDateLong(limitDate)

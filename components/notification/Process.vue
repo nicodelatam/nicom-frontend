@@ -96,6 +96,7 @@ export default {
         await this.$store.dispatch('notification/sendWhatsapp', {
           client: clients[i],
           month: this.month,
+          limit: null,
           token: this.$store.state.auth.token
         }).then(async (res) => {
           let success = false

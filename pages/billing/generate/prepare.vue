@@ -86,6 +86,56 @@
           </v-col>
         </v-row>
 
+        <!-- Progress Console -->
+        <v-row class="mt-4">
+          <v-col>
+            <v-card outlined>
+              <v-card-title class="d-flex align-center py-2">
+                <v-icon left color="blue darken-2">
+                  mdi-console
+                </v-icon>
+                <span class="subtitle-1">Consola de Progreso</span>
+                <v-spacer />
+                <v-btn
+                  small
+                  outlined
+                  color="grey darken-1"
+                  @click="clearConsole"
+                >
+                  <v-icon small left>
+                    mdi-delete-sweep
+                  </v-icon>
+                  Limpiar
+                </v-btn>
+              </v-card-title>
+              <v-divider />
+              <v-card-text class="pa-0">
+                <div
+                  ref="consoleContainer"
+                  class="console-container"
+                  style="height: 200px; overflow-y: auto; background-color: #1e1e1e; color: #ffffff; font-family: 'Courier New', monospace; font-size: 13px;"
+                >
+                  <div
+                    v-for="(log, index) in consoleLogs"
+                    :key="index"
+                    class="console-line"
+                    :class="`console-${log.type}`"
+                    style="padding: 4px 12px; border-left: 3px solid transparent;"
+                  >
+                    <span class="console-timestamp" style="color: #888; margin-right: 8px;">
+                      {{ log.timestamp }}
+                    </span>
+                    <span class="console-message">{{ log.message }}</span>
+                  </div>
+                  <div v-if="consoleLogs.length === 0" class="console-empty" style="padding: 20px; text-align: center; color: #666;">
+                    La consola está vacía. Los mensajes de progreso aparecerán aquí...
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+
         <div class="d-flex justify-space-between flex-wrap mt-4">
           <v-btn
             color="primary"
@@ -234,7 +284,8 @@ export default {
         { text: 'Estado Factura', value: 'invoiceStatus', sortable: false },
         { text: 'Estado Imagen', value: 'imageStatus', sortable: false }
       ],
-      includeAlreadyBilled: false
+      includeAlreadyBilled: false,
+      consoleLogs: []
     }
   },
 
@@ -270,9 +321,12 @@ export default {
   async mounted () {
     // Verificar si tenemos los datos necesarios
     if (!this.month || !this.year || !this.limit) {
+      this.logError('Faltan datos de período. Regresando al selector inicial...')
       this.$router.push('/billing/generate')
       return
     }
+
+    this.logInfo(`Iniciando preparación para generar facturas del período ${this.month.text} ${this.year}`)
 
     // Siempre cargar los servicios activos al montar el componente
     // para asegurar que se actualicen según el mes/año seleccionado
@@ -280,6 +334,7 @@ export default {
 
     // Seleccionar todos los servicios por defecto que tengan tarifa
     this.selectAll(true)
+    this.logInfo(`Seleccionados automáticamente ${this.selectedServices.length} servicios con tarifa`)
   },
 
   methods: {
@@ -301,6 +356,7 @@ export default {
 
     async getListOfActiveServices () {
       this.loading = true
+      this.logInfo(`Cargando servicios ${this.includeAlreadyBilled ? '(incluyendo ya facturados)' : ''} para ${this.month.text} ${this.year}...`)
       try {
         await this.$store.dispatch('billing/getListOfActiveServices', {
           token: this.$store.state.auth.token,
@@ -313,9 +369,10 @@ export default {
           year: this.year,
           includeAlreadyBilled: this.includeAlreadyBilled
         })
+        this.logSuccess(`Cargados ${this.activeServices.length} servicios activos`)
       } catch (error) {
         console.error('Error cargando servicios:', error)
-        this.$toast.error('Error cargando servicios activos', { duration: 2000 })
+        this.logError('Error cargando servicios activos')
       } finally {
         this.loading = false
       }
@@ -356,6 +413,7 @@ export default {
 
     onIncludeAlreadyBilledChange () {
       // Reload services when the switch changes
+      this.logInfo(`Cambiando modo: ${this.includeAlreadyBilled ? 'Incluir servicios ya facturados' : 'Solo servicios pendientes'}`)
       this.getListOfActiveServices()
     },
 
@@ -394,7 +452,106 @@ export default {
         invoice.id === item.existingInvoiceId
       )
       return targetInvoice && targetInvoice.image && targetInvoice.image.url
+    },
+
+    clearConsole () {
+      this.consoleLogs = []
+    },
+
+    logToConsole (message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString('es-ES', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+
+      this.consoleLogs.push({
+        timestamp,
+        message,
+        type
+      })
+
+      // Auto-scroll to bottom
+      this.$nextTick(() => {
+        if (this.$refs.consoleContainer) {
+          this.$refs.consoleContainer.scrollTop = this.$refs.consoleContainer.scrollHeight
+        }
+      })
+
+      // Limit console logs to prevent memory issues (keep last 200 logs)
+      if (this.consoleLogs.length > 200) {
+        this.consoleLogs = this.consoleLogs.slice(-200)
+      }
+    },
+
+    logInfo (message) {
+      this.logToConsole(message, 'info')
+    },
+
+    logSuccess (message) {
+      this.logToConsole(message, 'success')
+    },
+
+    logWarning (message) {
+      this.logToConsole(message, 'warning')
+    },
+
+    logError (message) {
+      this.logToConsole(message, 'error')
     }
   }
 }
 </script>
+
+<style scoped>
+/* Console Styles */
+.console-container {
+  line-height: 1.4;
+}
+
+.console-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.console-info {
+  border-left-color: #2196F3 !important;
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+.console-success {
+  border-left-color: #4CAF50 !important;
+  background-color: rgba(76, 175, 80, 0.05);
+  color: #4CAF50 !important;
+}
+
+.console-warning {
+  border-left-color: #FF9800 !important;
+  background-color: rgba(255, 152, 0, 0.05);
+  color: #FF9800 !important;
+}
+
+.console-error {
+  border-left-color: #F44336 !important;
+  background-color: rgba(244, 67, 54, 0.05);
+  color: #F44336 !important;
+}
+
+.console-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.console-container::-webkit-scrollbar-track {
+  background: #2e2e2e;
+}
+
+.console-container::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.console-container::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+</style>

@@ -220,6 +220,7 @@ export default {
           text: invoice.details,
           value: this.months.find(m => m.value === invoice.month).value
         },
+        limit: invoice.limit,
         token: this.$store.state.auth.token,
         metaServicesInfo,
         imgPath: invoice.image.url

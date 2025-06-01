@@ -240,9 +240,24 @@ export default {
         // Cargar la plantilla HTML
         const response = await fetch('/templates/invoice.html')
         const templateHtml = await response.text()
+
+        // Función auxiliar para parsear fechas sin problemas de zona horaria
+        const parseLocalDate = (dateString) => {
+          if (!dateString) { return new Date() }
+
+          // Si es una cadena en formato YYYY-MM-DD, parseamos manualmente
+          if (typeof dateString === 'string' && dateString.includes('-')) {
+            const [year, month, day] = dateString.split('-').map(Number)
+            return new Date(year, month - 1, day) // month - 1 porque los meses son 0-based
+          }
+
+          // Si no, usar Date normal
+          return new Date(dateString)
+        }
+
         // Formatear fechas
         const today = new Date()
-        const limitDate = new Date(invoice.limit || today)
+        const limitDate = parseLocalDate(invoice.limit) || today
         const formatDateLong = (date) => {
           const day = date.getDate()
           const monthNames = [

@@ -107,6 +107,56 @@
             </div>
           </v-col>
         </v-row>
+
+        <!-- Progress Console -->
+        <v-row class="mt-4">
+          <v-col>
+            <v-card outlined>
+              <v-card-title class="d-flex align-center py-2">
+                <v-icon left color="blue darken-2">
+                  mdi-console
+                </v-icon>
+                <span class="subtitle-1">Consola de Progreso</span>
+                <v-spacer />
+                <v-btn
+                  small
+                  outlined
+                  color="grey darken-1"
+                  @click="clearConsole"
+                >
+                  <v-icon small left>
+                    mdi-delete-sweep
+                  </v-icon>
+                  Limpiar
+                </v-btn>
+              </v-card-title>
+              <v-divider />
+              <v-card-text class="pa-0">
+                <div
+                  ref="consoleContainer"
+                  class="console-container"
+                  style="height: 300px; overflow-y: auto; background-color: #1e1e1e; color: #ffffff; font-family: 'Courier New', monospace; font-size: 13px;"
+                >
+                  <div
+                    v-for="(log, index) in consoleLogs"
+                    :key="index"
+                    class="console-line"
+                    :class="`console-${log.type}`"
+                    style="padding: 4px 12px; border-left: 3px solid transparent;"
+                  >
+                    <span class="console-timestamp" style="color: #888; margin-right: 8px;">
+                      {{ log.timestamp }}
+                    </span>
+                    <span class="console-message">{{ log.message }}</span>
+                  </div>
+                  <div v-if="consoleLogs.length === 0" class="console-empty" style="padding: 20px; text-align: center; color: #666;">
+                    La consola está vacía. Los mensajes de progreso aparecerán aquí...
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
       </v-card-text>
     </v-card>
 
@@ -169,9 +219,8 @@ export default {
         { text: 'Estado Generación', value: 'generationStatus', sortable: false },
         { text: 'Estado Envío WhatsApp', value: 'messageSent', sortable: false },
         { text: 'Estado Imagen', value: 'imageStatus', sortable: false }
-      ]
-      // Note: Old counters like generatedBills, omitedBills, alreadyBilled, sendIndex are removed
-      // They are replaced by computed properties based on 'processedItems'
+      ],
+      consoleLogs: []
     }
   },
 
@@ -236,20 +285,22 @@ export default {
   mounted () {
     // --- Initial Checks ---
     if (!this.month || !this.year || !this.limit) {
-      this.$toast.error('Faltan datos de período (mes/año/límite). Regresando...', { duration: 4000 })
+      this.logError('Faltan datos de período (mes/año/límite). Regresando...')
       this.$router.push('/billing/generate')
       return
     }
     if (!this.selectedServicesFromStore || this.selectedServicesFromStore.length === 0) {
-      this.$toast.error('No hay servicios seleccionados para procesar. Regresando...', { duration: 4000 })
+      this.logError('No hay servicios seleccionados para procesar. Regresando...')
       this.$router.push('/billing/generate/prepare')
       return
     }
     if (!this.currentCompany || !this.currentCompany.id) {
-      this.$toast.error('Información de la compañía no disponible.', { duration: 4000 })
+      this.logError('Información de la compañía no disponible.')
       // Potentially block further actions or redirect
       return
     }
+
+    this.logInfo(`Iniciando procesamiento para ${this.selectedServicesFromStore.length} servicios del período ${this.month.text} ${this.year}`)
 
     // --- Initialize processedItems ---
     // Create a deep copy and add status fields
@@ -360,14 +411,14 @@ export default {
       )
       if (this.isGenerationComplete && this.generationPendingCount === 0 && !this.loadingGenerate) {
         if (this.processedItems.length > 0) { // Avoid toast if nothing was processed
-          this.$toast.info('Fase de generación de facturas completada (o no necesaria).', { duration: 4000 })
+          this.logInfo('Fase de generación de facturas completada (o no necesaria).')
         }
       }
     },
 
     async generateBilling () {
       this.loadingGenerate = true
-      this.$toast.info(`Iniciando generación para ${this.generationPendingCount} servicios...`, { duration: 4000 })
+      this.logInfo(`Iniciando generación para ${this.generationPendingCount} servicios...`)
 
       let generatedCount = 0
       let errorCount = 0
@@ -381,7 +432,7 @@ export default {
 
         // 1. Check for Offer
         if (!item.offer || !item.offer.id || !item.offer.price) {
-          this.$toast.error(`Servicio ${item.code} (${item.client_name}) omitido: Sin tarifa asignada.`, { duration: 4000 })
+          this.logError(`Servicio ${item.code} (${item.client_name}) omitido: Sin tarifa asignada.`)
           item.skippedNoOffer = true
           skippedCount++
           continue // Skip this item
@@ -392,7 +443,7 @@ export default {
         if (item.existingInvoiceId) {
           // This case should ideally not be hit if the first 'if' handles it,
           // but kept for robustness.
-          this.$toast.info(`Servicio ${item.code} (${item.client_name}): Factura ya existe (ID: ${item.existingInvoiceId}).`, { duration: 4000 })
+          this.logInfo(`Servicio ${item.code} (${item.client_name}): Factura ya existe (ID: ${item.existingInvoiceId}).`)
           item.invoiceId = item.existingInvoiceId // Ensure invoiceId is set
           // Pre-existing invoices don't count towards 'generatedCount' here
           continue
@@ -402,7 +453,7 @@ export default {
         try {
           const createdInvoiceId = await this.processBalancesInFavor(item)
           if (createdInvoiceId) {
-            this.$toast.success(`Saldo a favor aplicado para ${item.code}. Factura #${createdInvoiceId} generada.`, { duration: 4000 })
+            this.logSuccess(`Saldo a favor aplicado para ${item.code}. Factura #${createdInvoiceId} generada.`)
             // Set the actual invoice ID returned from the balance process
             item.invoiceId = createdInvoiceId
             item.invoiceData = { id: createdInvoiceId, payed: true } // Simplified data for now
@@ -411,7 +462,7 @@ export default {
           }
         } catch (balanceError) {
           console.error(`Error processing balance in favor for ${item.code}:`, balanceError)
-          this.$toast.error(`Error procesando saldo a favor para ${item.code}: ${balanceError.message}`, { duration: 5000 })
+          this.logError(`Error procesando saldo a favor para ${item.code}: ${balanceError.message}`)
           // Decide if we should stop or continue with regular invoice? For now, let's skip generation if balance check failed.
           item.generationError = true // Mark as error for this item
           errorCount++
@@ -460,7 +511,7 @@ export default {
             throw new Error('Invoice created but no ID returned.')
           }
 
-          this.$toast.success(`Factura #${createdInvoice.id} creada para ${item.code} (${item.client_name}).`, { duration: 4000 })
+          this.logSuccess(`Factura #${createdInvoice.id} creada para ${item.code} (${item.client_name}).`)
           item.invoiceId = createdInvoice.id
           item.invoiceData = createdInvoice // Store the created invoice data
           generatedCount++
@@ -471,7 +522,7 @@ export default {
             if (this.currentCompany.meta_template) {
               const imageInfo = await this.generateImageFromBill(createdInvoice, item)
               if (imageInfo && imageInfo[0]?.url) {
-                this.$toast.success(`Imagen generada para factura #${createdInvoice.id}`, { duration: 3000 })
+                this.logSuccess(`Imagen generada para factura #${createdInvoice.id}`)
                 // Update the invoice data with the generated image
                 if (item.invoiceData) {
                   item.invoiceData.image = imageInfo[0]
@@ -498,7 +549,7 @@ export default {
             })
           } catch (updateError) {
             console.error(`Error updating billing period for ${item.code}:`, updateError)
-            this.$toast.error(`No se pudo actualizar período de facturación para ${item.code}.`, { duration: 4000 })
+            this.logError(`No se pudo actualizar período de facturación para ${item.code}.`)
             // Continue even if this fails
           }
 
@@ -519,7 +570,7 @@ export default {
           //     await this.$store.dispatch('billing/createLegalNote', legalNote)
           // } catch (legalNoteError) {
           //      console.error(`Error creating legal note for ${item.code}:`, legalNoteError)
-          //      this.$toast.error(`No se pudo crear nota legal para ${item.code}.`, { duration: 4000 })
+          //      this.logError(`No se pudo crear nota legal para ${item.code}.`)
           //      // Continue even if this fails
           // }
 
@@ -533,26 +584,26 @@ export default {
           //    })
           // } catch (balanceError) {
           //     console.error(`Error updating service balance for ${item.code}:`, balanceError)
-          //     this.$toast.error(`No se pudo actualizar saldo para ${item.code}.`, { duration: 4000 })
+          //     this.logError(`No se pudo actualizar saldo para ${item.code}.`)
           //     // Continue even if this fails
           // }
         } catch (error) {
           console.error(`Error creating invoice for service ${item.code}:`, error)
-          this.$toast.error(`Error al crear factura para ${item.code} (${item.client_name}): ${error.message}`, { duration: 4000 })
+          this.logError(`Error al crear factura para ${item.code} (${item.client_name}): ${error.message}`)
           item.generationError = true
           errorCount++
         }
       } // End of loop
 
       this.loadingGenerate = false
-      this.$toast.success(`Proceso de generación finalizado. OK: ${generatedCount}, Errores: ${errorCount}, Omitidos (Sin Tarifa): ${skippedCount}, Preexistentes: ${this.alreadyBilledCount}.`, { duration: 4000 })
+      this.logSuccess(`Proceso de generación finalizado. OK: ${generatedCount}, Errores: ${errorCount}, Omitidos (Sin Tarifa): ${skippedCount}, Preexistentes: ${this.alreadyBilledCount}.`)
       this.checkIfGenerationIsComplete() // Update completion status
     },
 
     async fetchInvoiceDataIfNeeded (item) {
       // If invoice data isn't already on the item (e.g., for pre-existing), fetch it.
       if (!item.invoiceData && item.invoiceId) {
-        this.$toast.info(`Cargando datos de factura #${item.invoiceId} para envío...`, { duration: 4000 })
+        this.logInfo(`Cargando datos de factura #${item.invoiceId} para envío...`)
         try {
           // Adjust endpoint and parameters as needed, add populate=* if necessary
           const response = await fetch(`${this.$config.API_STRAPI_ENDPOINT}invoices/${item.invoiceId}?populate=*`, {
@@ -565,7 +616,7 @@ export default {
           return true
         } catch (error) {
           console.error(`Error fetching invoice data for ${item.invoiceId}:`, error)
-          this.$toast.error(`Error cargando datos para factura ${item.invoiceId}: ${error.message}`, { duration: 4000 })
+          this.logError(`Error cargando datos para factura ${item.invoiceId}: ${error.message}`)
           item.messageSent = false // Mark as failed since we can't proceed
           return false
         }
@@ -576,12 +627,12 @@ export default {
 
     async sendNotifications () {
       this.loadingSend = true
-      this.$toast.info(`Iniciando envío de WhatsApp para ${this.sendPendingCount} facturas...`, { duration: 4000 })
+      this.logInfo(`Iniciando envío de WhatsApp para ${this.sendPendingCount} facturas...`)
 
       const metaServicesInfo = await this.getMetaServicesConfig()
       if (!metaServicesInfo) {
         this.loadingSend = false
-        this.$toast.error('Error crítico: Configuración de Meta (WhatsApp) no encontrada. No se pueden enviar mensajes.', { duration: 5000 })
+        this.logError('Error crítico: Configuración de Meta (WhatsApp) no encontrada. No se pueden enviar mensajes.')
         return
       }
 
@@ -615,15 +666,15 @@ export default {
           if (this.currentCompany.meta_template) { // Check if template-based image generation is configured
             imageInfo = await this.generateImageFromBill(invoiceData, serviceData) // Pass full invoice and service
             if (!imageInfo || !imageInfo[0]?.url) { // Check the expected structure of imageInfo
-              this.$toast.error(`No se pudo generar/subir imagen para factura ${invoiceData.id}, se enviará sin imagen.`, { duration: 4000 })
+              this.logError(`No se pudo generar/subir imagen para factura ${invoiceData.id}, se enviará sin imagen.`)
               // imageInfo = null; // Ensure it's null if failed
             } else {
-              this.$toast.success(`Imagen generada para factura #${invoiceData.id}`, { duration: 4000 })
+              this.logSuccess(`Imagen generada para factura #${invoiceData.id}`)
             }
           }
 
           // 2. Send WhatsApp Notification via Vuex action
-          this.$toast.info(`Enviando WhatsApp para ${serviceData.code} (${serviceData.client_name})...`, { duration: 4000 })
+          this.logInfo(`Enviando WhatsApp para ${serviceData.code} (${serviceData.client_name}) con fecha límite: ${this.limit}`)
           // Use the store action, passing necessary info
           // The action should handle constructing the message based on template/image
           const whatsappResponse = await this.$store.dispatch('notification/sendWhatsapp', {
@@ -631,6 +682,7 @@ export default {
             invoice: invoiceData, // Pass the full invoice data
             month: this.month, // Pass month object if needed by template
             year: this.year,
+            limit: this.limit, // Pass the limit date
             token: this.$store.state.auth.token,
             metaServicesInfo,
             // Pass image URL if available and generated successfully
@@ -640,7 +692,7 @@ export default {
           // 3. Check Response (using the success example structure)
           // Adjust based on the actual response structure of sendWhatsapp action
           if (whatsappResponse && whatsappResponse.messages && whatsappResponse.messages[0]?.id) {
-            this.$toast.success(`WhatsApp enviado a ${serviceData.phone} para Factura #${invoiceData.id}.`, { duration: 4000 })
+            this.logSuccess(`WhatsApp enviado a ${serviceData.phone} para Factura #${invoiceData.id}.`)
             item.messageSent = true
             sentCount++
 
@@ -653,7 +705,7 @@ export default {
           }
         } catch (error) {
           console.error(`Error sending WhatsApp for invoice ${item.invoiceId}:`, error)
-          this.$toast.error(`Error WhatsApp Fac #${item.invoiceId} (${item.code}): ${error.message}`, { duration: 4000 })
+          this.logError(`Error WhatsApp Fac #${item.invoiceId} (${item.code}): ${error.message}`)
           item.messageSent = false
           errorCount++
           // Optional: Update invoice status in Strapi to mark as failed notification
@@ -662,7 +714,7 @@ export default {
       } // End of loop
 
       this.loadingSend = false
-      this.$toast.success(`Proceso de envío finalizado. Enviados OK: ${sentCount}, Errores: ${errorCount}.`, { duration: 4000 })
+      this.logSuccess(`Proceso de envío finalizado. Enviados OK: ${sentCount}, Errores: ${errorCount}.`)
       // Update generation complete status again in case it affects display/buttons
       this.checkIfGenerationIsComplete()
     },
@@ -697,10 +749,10 @@ export default {
           throw new Error(`API Error (${response.status}): ${errorData.error?.message || 'Failed to update invoice status'}`)
         }
 
-        this.$toast.info(`Estado WhatsApp actualizado a ${status} para Factura #${invoiceId}.`, { duration: 2000 }) // Shorter duration for status updates
+        this.logInfo(`Estado WhatsApp actualizado a ${status} para Factura #${invoiceId}.`) // Shorter duration for status updates
       } catch (error) {
         console.error(`Error updating WhatsApp status for invoice ${invoiceId}:`, error)
-        this.$toast.error(`Error al actualizar estado WhatsApp Fac #${invoiceId}: ${error.message}`, { duration: 4000 })
+        this.logError(`Error al actualizar estado WhatsApp Fac #${invoiceId}: ${error.message}`)
         // Decide if we need to retry this update or just log it
       }
     },
@@ -710,7 +762,7 @@ export default {
       // Use currentCompany data if already loaded and sufficient
       const company = this.currentCompany
       if (company && company.meta_token && company.meta_endpoint) { // meta_template is checked later when needed
-        this.$toast.info('Configuración Meta (WhatsApp) cargada.', { duration: 4000 })
+        this.logInfo('Configuración Meta (WhatsApp) cargada.')
         return {
           meta_token: company.meta_token,
           meta_template: company.meta_template,
@@ -718,13 +770,13 @@ export default {
         }
       } else {
         // Attempt to fetch if missing (optional, depends on app flow)
-        this.$toast.error('Configuración Meta incompleta o no cargada, intentando recargar...', { duration: 4000 })
+        this.logError('Configuración Meta incompleta o no cargada, intentando recargar...')
         try {
           // Assuming a Vuex action exists to fetch company details
           await this.$store.dispatch('company/fetchCompanyDetails', this.currentCompany.id)
           const updatedCompany = this.$store.state.company.currentCompany
           if (updatedCompany && updatedCompany.meta_token && updatedCompany.meta_endpoint) {
-            this.$toast.success('Configuración Meta recargada exitosamente.', { duration: 4000 })
+            this.logSuccess('Configuración Meta recargada exitosamente.')
             return {
               meta_token: updatedCompany.meta_token,
               meta_template: updatedCompany.meta_template,
@@ -735,7 +787,7 @@ export default {
           }
         } catch (error) {
           console.error('Error fetching Meta config:', error)
-          this.$toast.error(`Error cargando configuración Meta: ${error.message}`, { duration: 4000 })
+          this.logError(`Error cargando configuración Meta: ${error.message}`)
           return null // Indicate failure
         }
       }
@@ -792,7 +844,7 @@ export default {
             if (this.currentCompany.meta_template) {
               const imageInfo = await this.generateImageFromBill(createdInvoice, activeService)
               if (imageInfo && imageInfo[0]?.url) {
-                this.$toast.success(`Imagen generada para factura con saldo a favor #${createdInvoice.id}`, { duration: 3000 })
+                this.logSuccess(`Imagen generada para factura con saldo a favor #${createdInvoice.id}`)
                 // Update the created invoice with image info
                 createdInvoice.image = imageInfo[0]
               }
@@ -870,7 +922,7 @@ export default {
             if (this.currentCompany.meta_template) {
               const imageInfo = await this.generateImageFromBill(createdInvoice, activeService)
               if (imageInfo && imageInfo[0]?.url) {
-                this.$toast.success(`Imagen generada para factura con saldo parcial #${createdInvoice.id}`, { duration: 3000 })
+                this.logSuccess(`Imagen generada para factura con saldo parcial #${createdInvoice.id}`)
                 // Update the created invoice with image info
                 createdInvoice.image = imageInfo[0]
               }
@@ -925,7 +977,7 @@ export default {
         return createdInvoice
       } catch (error) {
         console.error(`Error applying balance in favor for service ${activeService?.id}, balance invoice ${infavor?.id}:`, error)
-        this.$toast.error(`Error aplicando saldo: ${error.message}`, { duration: 5000 })
+        this.logError(`Error aplicando saldo: ${error.message}`)
         throw error // Re-throw the error to be caught by processBalancesInFavor
       }
     },
@@ -939,7 +991,7 @@ export default {
         return null // No valid balances to apply
       }
 
-      this.$toast.info(`Aplicando ${validBalances.length} saldo(s) a favor para ${activeService.code}...`, { duration: 3000 })
+      this.logInfo(`Aplicando ${validBalances.length} saldo(s) a favor para ${activeService.code}...`)
 
       let createdInvoiceId = null
       for (const balanceInFavor of validBalances) {
@@ -958,6 +1010,37 @@ export default {
     // --- Image Generation & Upload (Existing Methods - Review Needed) ---
     async generateImageFromBill (invoice, service) {
       try {
+        // Obtener TODAS las facturas pendientes del servicio (no solo la actual)
+        const allPendingInvoices = await this.getAllPendingInvoicesForService(service.id)
+
+        // Verificar si la factura actual ya está en la lista de pendientes
+        const currentInvoiceExists = allPendingInvoices.find(inv => inv.id === invoice.id)
+
+        // Si la factura actual no está en la lista, agregarla
+        let invoicesToShow = [...allPendingInvoices]
+        if (!currentInvoiceExists && invoice.balance > 0) {
+          invoicesToShow.push(invoice)
+          // Reordenar después de agregar la factura actual
+          invoicesToShow.sort((a, b) => {
+            if (a.year !== b.year) {
+              return a.year - b.year
+            }
+            return a.month - b.month
+          })
+        }
+
+        // Si no hay facturas pendientes, usar solo la factura actual
+        if (invoicesToShow.length === 0) {
+          invoicesToShow = [invoice]
+        }
+
+        // Calcular el total pendiente de todas las facturas
+        const totalPending = invoicesToShow.reduce((total, inv) => {
+          return total + (inv.balance || 0)
+        }, 0)
+
+        this.logInfo(`Generando imagen con ${invoicesToShow.length} facturas. Total: $${totalPending.toLocaleString('es-CO')}`)
+
         // Obtener datos del servicio y oferta desde el objeto invoice
         const offer = service.offer
 
@@ -965,9 +1048,23 @@ export default {
         const response = await fetch('/templates/invoice.html')
         const templateHtml = await response.text()
 
+        // Función auxiliar para parsear fechas sin problemas de zona horaria
+        const parseLocalDate = (dateString) => {
+          if (!dateString) { return new Date() }
+
+          // Si es una cadena en formato YYYY-MM-DD, parseamos manualmente
+          if (typeof dateString === 'string' && dateString.includes('-')) {
+            const [year, month, day] = dateString.split('-').map(Number)
+            return new Date(year, month - 1, day) // month - 1 porque los meses son 0-based
+          }
+
+          // Si no, usar Date normal
+          return new Date(dateString)
+        }
+
         // Formatear fechas
         const today = new Date()
-        const limitDate = new Date(invoice.limit)
+        const limitDate = parseLocalDate(invoice.limit)
 
         // Formato de fecha en español con el día del mes, mes en palabras y año
         const formatDateLong = (date) => {
@@ -984,7 +1081,8 @@ export default {
         const emissionDateFormatted = formatDateLong(today)
         const limitDateFormatted = formatDateLong(limitDate)
 
-        const paymentConcept = `Pago Mes ${this.getMonthName(invoice.month)} $${invoice.value.toLocaleString('es-CO')} pesos`
+        // Concepto principal para mostrar arriba
+        const mainPaymentConcept = `PAGO TOTAL: $${totalPending.toLocaleString('es-CO')} pesos`
         const currentDateTime = new Date().toLocaleString('es-ES')
 
         // Crear un contenedor temporal para el HTML
@@ -1044,7 +1142,7 @@ export default {
         if (barrioClienteEl) { barrioClienteEl.textContent = service.neighborhood || 'N/A' }
         if (idUsuarioEl) { idUsuarioEl.textContent = `CÓDIGO: ${service.code}` }
         if (celularClienteEl) { celularClienteEl.textContent = service.phone || 'N/A' }
-        if (emailClienteEl) { emailClienteEl.textContent = service.email || 'N/A' }
+        if (emailClienteEl) { emailClienteEl.textContent = service.normalized_client?.email || 'N/A' }
 
         // Agregar línea de atención con el teléfono de la empresa
         if (lineaAtencionEl && lineaAtencionEl.parentNode) {
@@ -1055,29 +1153,37 @@ export default {
         if (fechaEmisionEl) { fechaEmisionEl.textContent = emissionDateFormatted }
         if (fechaLimiteEl) { fechaLimiteEl.textContent = limitDateFormatted }
 
-        if (conceptoPagoEl) { conceptoPagoEl.textContent = paymentConcept }
+        // MODIFICADO: Mostrar el concepto principal y los detalles de todas las facturas
+        if (conceptoPagoEl) {
+          // Usamos innerHTML para poder agregar múltiples líneas
+          const conceptsHtml = invoicesToShow.map((inv) => {
+            const monthName = this.getMonthName(inv.month)
+            return `FACTURA ${inv.details || monthName} ${inv.year} $${(inv.balance || 0).toLocaleString('es-CO')}`
+          }).join('<br>')
+
+          conceptoPagoEl.innerHTML = `${mainPaymentConcept}<br><br>${conceptsHtml}`
+        }
+
         if (fechaPagoEl) { fechaPagoEl.textContent = currentDateTime }
 
-        // Estado de pago y clase correspondiente
-        const estadoTexto = invoice.payed ? 'PAGADO' : (invoice.partial ? 'ABONADO' : 'PENDIENTE')
+        // Estado de pago - mostrar como PENDIENTE si hay saldo
+        const estadoTexto = totalPending > 0 ? 'PENDIENTE' : 'PAGADO'
         if (estadoPagoEl) {
           estadoPagoEl.textContent = estadoTexto
 
           // Cambiar los estilos según el estado
-          if (!invoice.payed) {
-            if (invoice.partial) {
-              estadoPagoEl.style.borderColor = '#FFC107'
-              estadoPagoEl.style.color = '#FFC107'
-            } else {
-              estadoPagoEl.style.borderColor = '#FF0000'
-              estadoPagoEl.style.color = '#FF0000'
-            }
+          if (totalPending > 0) {
+            estadoPagoEl.style.borderColor = '#FF0000'
+            estadoPagoEl.style.color = '#FF0000'
+          } else {
+            estadoPagoEl.style.borderColor = '#4CAF50'
+            estadoPagoEl.style.color = '#4CAF50'
           }
         }
 
-        // Mostrar el saldo pendiente
+        // Mostrar el saldo pendiente total
         if (totalPendienteEl) {
-          totalPendienteEl.textContent = `TOTAL PENDIENTE POR PAGAR: $${invoice.balance.toLocaleString('es-CO')} pesos`
+          totalPendienteEl.textContent = `TOTAL PENDIENTE POR PAGAR: $${totalPending.toLocaleString('es-CO')} pesos`
         }
 
         if (emailEmpresaEl) { emailEmpresaEl.textContent = company.email || 'N/A' }
@@ -1127,6 +1233,39 @@ export default {
       }
     },
 
+    // Nueva función para obtener todas las facturas pendientes de un servicio
+    async getAllPendingInvoicesForService (serviceId) {
+      try {
+        // Usar la acción existente del store para obtener facturas pendientes
+        const pendingInvoices = await this.$store.dispatch('billing/getInvoicesByServiceId', {
+          token: this.$store.state.auth.token,
+          serviceId,
+          payed: false // Solo las no pagadas
+        })
+
+        // Filtrar solo las que tienen saldo pendiente y no son adelantos
+        const validInvoices = pendingInvoices.filter(invoice =>
+          invoice.balance > 0 &&
+          invoice.concept !== 'ADELANTO'
+        )
+
+        // Ordenar por mes y año (las más antiguas primero)
+        validInvoices.sort((a, b) => {
+          if (a.year !== b.year) {
+            return a.year - b.year
+          }
+          return a.month - b.month
+        })
+
+        this.logInfo(`Encontradas ${validInvoices.length} facturas pendientes para el servicio ${serviceId}`)
+        return validInvoices
+      } catch (error) {
+        console.error('Error obteniendo facturas pendientes:', error)
+        this.logError(`Error al obtener facturas pendientes: ${error.message}`)
+        return []
+      }
+    },
+
     getMonthName (month) {
       const monthNames = [
         'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
@@ -1171,24 +1310,24 @@ export default {
 
     async generateMissingImages () {
       if (!this.month || !this.year || !this.currentCompany?.meta_template) {
-        this.$toast.error('Faltan datos requeridos (mes/año) o no hay plantilla configurada.', { duration: 4000 })
+        this.logError('Faltan datos requeridos (mes/año) o no hay plantilla configurada.')
         return
       }
 
       this.loadingGenerateImages = true
-      this.$toast.info(`Buscando facturas del ${this.month.text} ${this.year} sin imagen...`, { duration: 4000 })
+      this.logInfo(`Buscando facturas del ${this.month.text} ${this.year} sin imagen...`)
 
       try {
         // 1. Fetch invoices for the selected month/year that don't have images
         const invoicesWithoutImages = await this.fetchInvoicesWithoutImages()
 
         if (!invoicesWithoutImages || invoicesWithoutImages.length === 0) {
-          this.$toast.success('No se encontraron facturas sin imagen para el período seleccionado.', { duration: 4000 })
+          this.logSuccess('No se encontraron facturas sin imagen para el período seleccionado.')
           this.loadingGenerateImages = false
           return
         }
 
-        this.$toast.info(`Encontradas ${invoicesWithoutImages.length} facturas sin imagen. Generando...`, { duration: 4000 })
+        this.logInfo(`Encontradas ${invoicesWithoutImages.length} facturas sin imagen. Generando...`)
 
         let successCount = 0
         let errorCount = 0
@@ -1198,13 +1337,13 @@ export default {
         for (let i = 0; i < invoicesWithoutImages.length; i++) {
           const invoice = invoicesWithoutImages[i]
           try {
-            this.$toast.info(`[${i + 1}/${totalCount}] Generando imagen para factura #${invoice.id}...`, { duration: 1500 })
+            this.logInfo(`[${i + 1}/${totalCount}] Generando imagen para factura #${invoice.id}...`)
 
             // Use the existing generateImageFromBill method
             const imageInfo = await this.generateImageFromBill(invoice, invoice.service)
 
             if (imageInfo && imageInfo[0]?.url) {
-              this.$toast.success(`[${i + 1}/${totalCount}] Imagen generada para factura #${invoice.id}`, { duration: 1500 })
+              this.logSuccess(`[${i + 1}/${totalCount}] Imagen generada para factura #${invoice.id}`)
               successCount++
 
               // Update any matching item in processedItems if it exists
@@ -1223,15 +1362,15 @@ export default {
             }
           } catch (error) {
             console.error(`Error generating image for invoice ${invoice.id}:`, error)
-            this.$toast.error(`[${i + 1}/${totalCount}] Error en factura #${invoice.id}: ${error.message}`, { duration: 2500 })
+            this.logError(`[${i + 1}/${totalCount}] Error en factura #${invoice.id}: ${error.message}`)
             errorCount++
           }
         }
 
-        this.$toast.success(`Proceso completado para ${this.month.text} ${this.year}. Éxito: ${successCount}, Errores: ${errorCount}`, { duration: 6000 })
+        this.logSuccess(`Proceso completado para ${this.month.text} ${this.year}. Éxito: ${successCount}, Errores: ${errorCount}`)
       } catch (error) {
         console.error('Error in generateMissingImages:', error)
-        this.$toast.error(`Error general: ${error.message}`, { duration: 4000 })
+        this.logError(`Error general: ${error.message}`)
       } finally {
         this.loadingGenerateImages = false
       }
@@ -1295,6 +1434,53 @@ export default {
     exit () {
       this.$store.commit('billing/resetState') // Optional: Reset Vuex state on exit
       this.$router.push('/client') // Or appropriate dashboard/list page
+    },
+
+    clearConsole () {
+      this.consoleLogs = []
+    },
+
+    logToConsole (message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString('es-ES', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+
+      this.consoleLogs.push({
+        timestamp,
+        message,
+        type
+      })
+
+      // Auto-scroll to bottom
+      this.$nextTick(() => {
+        if (this.$refs.consoleContainer) {
+          this.$refs.consoleContainer.scrollTop = this.$refs.consoleContainer.scrollHeight
+        }
+      })
+
+      // Limit console logs to prevent memory issues (keep last 500 logs)
+      if (this.consoleLogs.length > 500) {
+        this.consoleLogs = this.consoleLogs.slice(-500)
+      }
+    },
+
+    logInfo (message) {
+      this.logToConsole(message, 'info')
+    },
+
+    logSuccess (message) {
+      this.logToConsole(message, 'success')
+    },
+
+    logWarning (message) {
+      this.logToConsole(message, 'warning')
+    },
+
+    logError (message) {
+      this.logToConsole(message, 'error')
     }
   }
 }
@@ -1304,5 +1490,55 @@ export default {
 /* Add styles if needed, e.g., for chips */
 .v-chip {
   font-weight: bold;
+}
+
+/* Console Styles */
+.console-container {
+  line-height: 1.4;
+}
+
+.console-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.console-info {
+  border-left-color: #2196F3 !important;
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+.console-success {
+  border-left-color: #4CAF50 !important;
+  background-color: rgba(76, 175, 80, 0.05);
+  color: #4CAF50 !important;
+}
+
+.console-warning {
+  border-left-color: #FF9800 !important;
+  background-color: rgba(255, 152, 0, 0.05);
+  color: #FF9800 !important;
+}
+
+.console-error {
+  border-left-color: #F44336 !important;
+  background-color: rgba(244, 67, 54, 0.05);
+  color: #F44336 !important;
+}
+
+.console-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.console-container::-webkit-scrollbar-track {
+  background: #2e2e2e;
+}
+
+.console-container::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.console-container::-webkit-scrollbar-thumb:hover {
+  background: #777;
 }
 </style>
