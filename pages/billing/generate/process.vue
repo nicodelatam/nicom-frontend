@@ -686,7 +686,7 @@ export default {
             token: this.$store.state.auth.token,
             metaServicesInfo,
             // Pass image URL if available and generated successfully
-            imgPath: imageInfo && imageInfo[0] ? `${this.$config.CDN_STRAPI_ENDPOINT}${imageInfo[0].url}` : null
+            imgPath: imageInfo && imageInfo[0] ? imageInfo[0].url : null
           })
 
           // 3. Check Response (using the success example structure)
