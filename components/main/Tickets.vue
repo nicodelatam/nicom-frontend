@@ -731,7 +731,8 @@ export default {
         })
         this.sendWhatsapp({
           phone: this.currentTechnician.phone,
-          service: ticket.service
+          service: ticket.service,
+          tickettype: ticket.tickettype.name
         })
         this.currentTechnician = null
         setTimeout(() => {
@@ -776,7 +777,7 @@ export default {
                     },
                     {
                       type: 'text',
-                      text: `${payload.service.client_name} - ${payload.service.address} - ${payload.service.neighborhood}`
+                      text: `${payload.tickettype} - ${payload.service.client_name} - ${payload.service.address} - ${payload.service.neighborhood}`
                     }
                   ]
                 }
