@@ -773,11 +773,11 @@ export default {
                   parameters: [
                     {
                       type: 'text',
-                      text: this.$route.query.clienttype
+                      text: `${payload.tickettype} - ${this.$route.query.clienttype}`
                     },
                     {
                       type: 'text',
-                      text: `${payload.tickettype} - ${payload.service.client_name} - ${payload.service.address} - ${payload.service.neighborhood}`
+                      text: `${payload.service.client_name} - ${payload.service.address} - ${payload.service.neighborhood}`
                     }
                   ]
                 }
