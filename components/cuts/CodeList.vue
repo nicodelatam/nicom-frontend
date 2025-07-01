@@ -911,7 +911,7 @@ export default {
 
       // Crear y descargar archivo CSV
       const csvContent = finalData.map(row =>
-        Array.isArray(row) ? row.join(',') : row
+        Array.isArray(row) ? row.join(';') : row
       ).join('\n')
 
       const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
