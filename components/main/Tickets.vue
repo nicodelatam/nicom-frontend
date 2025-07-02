@@ -742,6 +742,20 @@ export default {
         this.$toast.error('El técnico no tiene un chat de telegram asociado o un numero de telefono de whatsapp valido', { duration: 5000 })
       }
     },
+    sanitizeWhatsAppData (value) {
+      // Si el valor es nulo, undefined o string vacío, devolver "No Definido"
+      if (!value || value.toString().trim() === '') {
+        return 'No Definido'
+      }
+      
+      // Convertir a string y sanitizar
+      return value.toString()
+        .trim() // Remover espacios al inicio y final
+        .replace(/[^a-zA-Z0-9\s\-_]/g, '') // Mantener solo letras, números, espacios, guiones y guiones bajos
+        .replace(/\s+/g, ' ') // Reemplazar múltiples espacios con uno solo
+        .trim() // Trim final por si quedaron espacios
+        || 'No Definido' // Si después de sanitizar queda vacío, usar "No Definido"
+    },
     async sendWhatsapp (payload) {
       const metaServicesInfo = await this.getMetaServicesConfig()
       if (!metaServicesInfo) {
@@ -749,6 +763,11 @@ export default {
         this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_ERROR')
         return
       }
+
+      // Sanitizar los datos antes de enviarlos
+      const sanitizedClientName = this.sanitizeWhatsAppData(payload.service.client_name)
+      const sanitizedAddress = this.sanitizeWhatsAppData(payload.service.address)
+      const sanitizedNeighborhood = this.sanitizeWhatsAppData(payload.service.neighborhood)
 
       fetch(metaServicesInfo.meta_endpoint, {
         method: 'POST',
@@ -777,7 +796,7 @@ export default {
                     },
                     {
                       type: 'text',
-                      text: `${payload.service.client_name} - ${payload.service.address} - ${payload.service.neighborhood}`
+                      text: `${sanitizedClientName} - ${sanitizedAddress} - ${sanitizedNeighborhood}`
                     }
                   ]
                 }
