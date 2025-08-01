@@ -747,6 +747,11 @@ export const actions = {
             cancelled: {
               $null: true
             }
+          },
+          {
+            concept: {
+              $ne: 'APLICA SALDO A FAVOR'
+            }
           }
         ]
       },
