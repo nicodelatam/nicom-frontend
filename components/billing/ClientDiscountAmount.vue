@@ -145,6 +145,7 @@ export default {
         token: this.$store.state.auth.token,
         biller: this.$store.state.auth,
         service: this.service.id,
+        concept: 'BULK',
         debit: 0,
         credit: amount,
         connect: true,
