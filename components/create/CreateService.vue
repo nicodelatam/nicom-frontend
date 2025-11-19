@@ -305,6 +305,7 @@
           <v-row>
             <v-col>
               <v-switch
+                v-if="Client.offer"
                 v-model="Client.firstmonth"
                 :label="Client.firstmonth ? `Mes adelantado $${formatCurrency(Client.offer.price)}` : 'Mes adelantado'"
                 outlined
