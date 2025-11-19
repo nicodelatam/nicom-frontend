@@ -747,14 +747,12 @@ export default {
       if (!value || value.toString().trim() === '') {
         return 'No Definido'
       }
-      
       // Convertir a string y sanitizar
       return value.toString()
         .trim() // Remover espacios al inicio y final
         .replace(/[^a-zA-Z0-9\s\-_]/g, '') // Mantener solo letras, números, espacios, guiones y guiones bajos
         .replace(/\s+/g, ' ') // Reemplazar múltiples espacios con uno solo
-        .trim() // Trim final por si quedaron espacios
-        || 'No Definido' // Si después de sanitizar queda vacío, usar "No Definido"
+        .trim() || 'No Definido' // Si después de sanitizar queda vacío, usar "No Definido"
     },
     async sendWhatsapp (payload) {
       const metaServicesInfo = await this.getMetaServicesConfig()
