@@ -756,7 +756,7 @@ export default {
         type: 'FACTURA',
         offer: 1,
         concept,
-        details: this.getMonthNameByNumber(),
+        details: concept,
         payed: false,
         partial: false,
         indebt: false,
