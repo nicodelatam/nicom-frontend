@@ -220,11 +220,62 @@ export default {
     }
   },
 
+  mounted () {
+    this.fetchLatestBatch()
+  },
+
   beforeDestroy () {
     this.stopPolling()
   },
 
   methods: {
+    async fetchLatestBatch () {
+      try {
+        const qs = require('qs')
+        const query = qs.stringify({
+          sort: 'createdAt:desc',
+          pagination: { limit: 1 },
+          filters: {
+            company: { id: { $eq: this.currentCompany.id } },
+            finalized: { $eq: false }
+          }
+        }, {
+          encodeValuesOnly: true
+        })
+
+        const response = await fetch(`${this.$config.API_STRAPI_ENDPOINT}billing-batches?${query}`, {
+          headers: {
+            Authorization: `Bearer ${this.$store.state.auth.token}`
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch latest batch')
+        }
+
+        const { data } = await response.json()
+
+        console.log(data)
+
+        if (data && data.length > 0) {
+          const latestBatch = data[0]
+          // Only load if it's relevant (optional: you might want to check date or other criteria)
+          // For now, we load the absolute latest for this company
+          this.batchId = latestBatch.id
+
+          // Update status immediately
+          await this.checkStatus()
+
+          // Resume polling if active
+          if (this.isProcessing) {
+            this.startPolling()
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching latest batch:', error)
+      }
+    },
+
     async generateBilling () {
       this.loadingGenerate = true
       try {
@@ -261,7 +312,7 @@ export default {
         const data = await response.json()
         this.batchId = data.batchId // Flattened response
 
-        this.$toast.success('Proceso iniciado en segundo plano')
+        this.$toast.success('Proceso iniciado en segundo plano', { duration: 5000 })
         this.status = 'pending'
         this.startPolling()
       } catch (error) {
@@ -319,7 +370,7 @@ export default {
         if (this.isComplete) {
           this.stopPolling()
           if (this.status === 'completed') {
-            this.$toast.success('Proceso completado')
+            this.$toast.success('Proceso completado', { duration: 5000 })
           } else {
             this.$toast.error('El proceso falló')
           }
@@ -364,7 +415,7 @@ export default {
           throw new Error(error.error?.message || 'Error en prueba')
         }
 
-        this.$toast.success('Mensaje de prueba enviado correctamente')
+        this.$toast.success('Mensaje de prueba enviado correctamente', { duration: 5000 })
         this.testDialog = false
       } catch (error) {
         this.$toast.error(`Error: ${error.message}`)
@@ -373,7 +424,25 @@ export default {
       }
     },
 
-    exit () {
+    async exit () {
+      if (this.batchId) {
+        try {
+          await fetch(`${this.$config.API_STRAPI_ENDPOINT}billing-batches/${this.batchId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${this.$store.state.auth.token}`
+            },
+            body: JSON.stringify({
+              data: {
+                finalized: true
+              }
+            })
+          })
+        } catch (e) {
+          console.error('Error finalizing batch', e)
+        }
+      }
       this.$router.push('/billing/generate')
     }
   }
