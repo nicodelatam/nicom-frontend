@@ -234,7 +234,8 @@ export default {
           limit: this.limit,
           clienttype: this.getClientTypeId(),
           city: this.getCityId(),
-          company: this.currentCompany.id
+          company: this.currentCompany.id,
+          serviceIds: this.$store.state.billing.selectedServices.map(s => s.id) // Send selected IDs
         }
 
         if (!payload.city || !payload.clienttype) {
@@ -292,14 +293,27 @@ export default {
           }
         })
 
-        const data = await response.json()
+        const { data: res } = await response.json()
         // Strapi transformer flattens response, so data is the object directly
-        const batch = data
+        const batch = res
+
+        console.log(batch)
 
         this.status = batch.status
         this.progress = batch.progress
         this.total = batch.total
-        this.logs = batch.logs || []
+
+        // Robustly handle logs
+        let logs = batch.logs
+        if (typeof logs === 'string') {
+          try {
+            logs = JSON.parse(logs)
+          } catch (e) {
+            logs = [logs]
+          }
+        }
+        this.logs = Array.isArray(logs) ? logs : []
+
         this.results = batch.results
 
         if (this.isComplete) {
