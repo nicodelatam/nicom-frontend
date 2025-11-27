@@ -29,7 +29,7 @@ export const actions = {
       })
         .then((res) => {
           if (res.status === 200) {
-            this.$toast.success('Direccion actualizada con éxito', { duration: 4000, position: 'bottom-center' })
+            this.$toast.success('Direccion creada con éxito', { duration: 4000, position: 'bottom-center' })
           } else {
             this.$toast.error('Error al actualizar la direccion', { position: 'bottom-center' })
           }

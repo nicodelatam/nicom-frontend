@@ -29,6 +29,7 @@ export default function ({ route, redirect, store }) {
     redirect({ path: '/client', query: { ...newQuery } })
   }
   if (!query.company || !query.clienttype || !query.city) {
+    console.log('uwu?', path, query)
     redirect({ path, query: { ...newQuery } })
   }
 }

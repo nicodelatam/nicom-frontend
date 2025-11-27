@@ -85,13 +85,6 @@ export default {
       return this.$store.state.isDesktop
     }
   },
-  watch: {
-    '$route.query.company' () {
-      setTimeout(() => {
-        this.changeCompany(this.selectedCompany)
-      }, 100)
-    }
-  },
   mounted () {
     setTimeout(() => {
       this.changeCompany(this.selectedCompany)
