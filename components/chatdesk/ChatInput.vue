@@ -173,15 +173,14 @@ export default {
     },
     getMetaInfoFromCompany () {
       const company = this.$store.state.company.currentCompany
-      if (!company.token) {
-        this.meta.valid = false
-        return
+      if (company.token) {
+        this.meta.valid = true
+        this.meta.api_version = company.meta_api_version
+        this.meta.phone_id = company.meta_phone_id
+        this.meta.wba_id = company.meta_WBA_id
+        this.meta.token = company.meta_token
+        this.meta.phone = company.meta_phone
       }
-      this.meta.api_version = company.meta_api_version
-      this.meta.phone_id = company.meta_phone_id
-      this.meta.wba_id = company.meta_WBA_id
-      this.meta.token = company.meta_token
-      this.meta.phone = company.meta_phone
     },
     getDateFromUnixTime (unixTime) {
       const date = new Date(unixTime * 1000)
