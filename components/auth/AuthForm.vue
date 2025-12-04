@@ -186,7 +186,10 @@ export default {
               meta_endpoint: company.meta_endpoint,
               meta_token: company.meta_token,
               meta_template: company.meta_template,
-              meta_ticket_template: company.meta_ticket_template
+              meta_ticket_template: company.meta_ticket_template,
+              meta_api_version: company.meta_api_version,
+              meta_phone_id: company.meta_phone_id,
+              meta_WBA_id: company.meta_WBA_id
             }
           })
           const userMenus = userResponse.menus.map((menu) => {
