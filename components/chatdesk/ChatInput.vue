@@ -24,6 +24,14 @@ export default {
   name: 'ChatdeskInput',
   data () {
     return {
+      meta: {
+        valid: false,
+        token: '',
+        api_version: '',
+        phone_id: '',
+        wba_id: '',
+        phone: ''
+      },
       operatorTextInput: '',
       messageText: {
         messaging_product: 'whatsapp',
@@ -75,8 +83,17 @@ export default {
       return this.$store.state.whatsapp.whatsappContacts.find(c => c.phone === this.$route.query.phone)
     }
   },
+  mounted () {
+    setTimeout(() => {
+      this.getMetaInfoFromCompany()
+    }, 200)
+  },
   methods: {
     sendMessage () {
+      if (!this.meta.valid) {
+        this.$toast.error('No se encontro la informacion de la empresa')
+        return
+      }
       this.sendWhatsappMessage()
       this.createMenssageOnDatabase()
       this.operatorTextInput = ''
@@ -115,8 +132,8 @@ export default {
                     }
                   ],
                   metadata: {
-                    phone_number_id: '100480202798133',
-                    display_phone_number: '573508106069'
+                    phone_number_id: this.meta.phone_id,
+                    display_phone_number: `57${this.meta.phone}`
                   },
                   messaging_product: 'whatsapp'
                 }
@@ -149,10 +166,22 @@ export default {
           body: this.operatorTextInput
         }
       }
-      const res = await this.$store.dispatch('whatsapp/sendMessage', { template, phone: '100480202798133' })
+      const res = await this.$store.dispatch('whatsapp/sendMessage', { template, metaInfo: this.meta })
       if (res.error) {
         this.$toast.error(res.error.message)
       }
+    },
+    getMetaInfoFromCompany () {
+      const company = this.$store.state.company.currentCompany
+      if (!company.token) {
+        this.meta.valid = false
+        return
+      }
+      this.meta.api_version = company.meta_api_version
+      this.meta.phone_id = company.meta_phone_id
+      this.meta.wba_id = company.meta_WBA_id
+      this.meta.token = company.meta_token
+      this.meta.phone = company.meta_phone
     },
     getDateFromUnixTime (unixTime) {
       const date = new Date(unixTime * 1000)

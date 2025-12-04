@@ -22,11 +22,21 @@ export default {
   data () {
     return {
       audio: null,
-      imageZoom: false
+      imageZoom: false,
+      meta: {
+        api_version: '',
+        phone_id: '',
+        wba_id: '',
+        token: '',
+        phone: ''
+      }
     }
   },
   mounted () {
     this.getMediaById()
+    setTimeout(() => {
+      this.getMetaInfoFromCompany()
+    }, 200)
   },
   methods: {
     async getMediaById () {
@@ -64,6 +74,18 @@ export default {
         audio,
         token: this.$store.state.auth.token
       })
+    },
+    getMetaInfoFromCompany () {
+      const company = this.$store.state.company.currentCompany
+      if (!company.token) {
+        this.meta.valid = false
+        return
+      }
+      this.meta.api_version = company.meta_api_version
+      this.meta.phone_id = company.meta_phone_id
+      this.meta.wba_id = company.meta_WBA_id
+      this.meta.token = company.meta_token
+      this.meta.phone = company.meta_phone
     },
     getDateFromUnixTime (unixTime) {
       const date = new Date(unixTime * 1000)
