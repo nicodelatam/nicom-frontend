@@ -28,9 +28,9 @@ export default {
       token: this.$store.state.auth.token,
       serviceId: this.$route.query.service
     })
-    setTimeout(() => {
-      this.printoToPdf()
-    }, 1000)
+    // setTimeout(() => {
+    //   this.printoToPdf()
+    // }, 1000)
   },
   methods: {
     printoToPdf () {
