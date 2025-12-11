@@ -318,11 +318,20 @@ export default {
       this.loadingRetry = true
       this.$toast.info(`Iniciando reenvío para ${this.itemsToRetry.length} facturas...`, { duration: 4000 })
 
-      const metaServicesInfo = await this.getMetaServicesConfig() // Reuse from process.vue
-      if (!metaServicesInfo) {
+      if (this.currentCompany.meta_token === null || this.currentCompany.meta_token === undefined) {
         this.loadingRetry = false
-        // Error toast is shown within getMetaServicesConfig
+        this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_ERROR')
         return
+      }
+      let metaServicesInfo = null
+      metaServicesInfo = {
+        meta_token: this.currentCompany.meta_token,
+        meta_template: this.currentCompany.meta_template,
+        meta_ticket_template: this.currentCompany.meta_ticket_template,
+        meta_endpoint: this.currentCompany.meta_endpoint,
+        meta_WBA_id: this.currentCompany.meta_WBA_id,
+        meta_api_version: this.currentCompany.meta_api_version,
+        meta_phone_id: this.currentCompany.meta_phone_id
       }
 
       let sentCount = 0

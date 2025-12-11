@@ -206,11 +206,20 @@ export default {
       })
     },
     async sendInvoice (invoice) {
-      const metaServicesInfo = await this.getMetaServicesConfig()
-      if (!metaServicesInfo) {
+      if (this.currentCompany.meta_token === null || this.currentCompany.meta_token === undefined) {
         this.loading = false
         this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_ERROR')
         return
+      }
+      let metaServicesInfo = null
+      metaServicesInfo = {
+        meta_token: this.currentCompany.meta_token,
+        meta_template: this.currentCompany.meta_template,
+        meta_ticket_template: this.currentCompany.meta_ticket_template,
+        meta_endpoint: this.currentCompany.meta_endpoint,
+        meta_WBA_id: this.currentCompany.meta_WBA_id,
+        meta_api_version: this.currentCompany.meta_api_version,
+        meta_phone_id: this.currentCompany.meta_phone_id
       }
 
       this.loading = true

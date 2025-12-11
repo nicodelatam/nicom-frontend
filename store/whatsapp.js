@@ -183,24 +183,6 @@ export const actions = {
         })
     })
   },
-  sendMessage ({ commit }, payload) {
-    return new Promise((resolve, reject) => {
-      fetch(`https://graph.facebook.com/${payload.meta.api_version}/${payload.meta.phone_id}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${payload.meta.api_token}`
-        },
-        body: JSON.stringify(
-          payload.template
-        )
-      })
-        .then(res => res.json())
-        .then((res) => {
-          resolve(res)
-        })
-    })
-  },
   getWhatsappMessages ({ commit }, payload) {
     try {
       return new Promise((resolve, reject) => {

@@ -24,14 +24,6 @@ export default {
   name: 'ChatdeskInput',
   data () {
     return {
-      meta: {
-        valid: false,
-        token: '',
-        api_version: '',
-        phone_id: '',
-        wba_id: '',
-        phone: ''
-      },
       operatorTextInput: '',
       messageText: {
         messaging_product: 'whatsapp',
@@ -81,19 +73,13 @@ export default {
   computed: {
     currentContact () {
       return this.$store.state.whatsapp.whatsappContacts.find(c => c.phone === this.$route.query.phone)
+    },
+    currentCompany () {
+      return this.$store.state.company.currentCompany
     }
-  },
-  mounted () {
-    setTimeout(() => {
-      this.getMetaInfoFromCompany()
-    }, 200)
   },
   methods: {
     sendMessage () {
-      if (!this.meta.valid) {
-        this.$toast.error('No se encontro la informacion de la empresa')
-        return
-      }
       this.sendWhatsappMessage()
       this.createMenssageOnDatabase()
       this.operatorTextInput = ''
@@ -155,21 +141,50 @@ export default {
         lastWhatsapp: message.data
       })
     },
-    async sendWhatsappMessage () {
-      const template = {
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: this.$route.query.phone,
-        type: 'text',
-        text: { // the text object
-          preview_url: false,
-          body: this.operatorTextInput
-        }
+    sendWhatsappMessage () {
+      if (this.currentCompany.meta_token === null || this.currentCompany.meta_token === undefined) {
+        this.loading = false
+        this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_ERROR')
+        return
       }
-      const res = await this.$store.dispatch('whatsapp/sendMessage', { template, metaInfo: this.meta })
-      if (res.error) {
-        this.$toast.error(res.error.message)
+      let metaServicesInfo = null
+      metaServicesInfo = {
+        meta_token: this.currentCompany.meta_token,
+        meta_template: this.currentCompany.meta_template,
+        meta_ticket_template: this.currentCompany.meta_ticket_template,
+        meta_endpoint: this.currentCompany.meta_endpoint,
+        meta_WBA_id: this.currentCompany.meta_WBA_id,
+        meta_api_version: this.currentCompany.meta_api_version,
+        meta_phone_id: this.currentCompany.meta_phone_id
       }
+      const url = `${metaServicesInfo.meta_endpoint}/${metaServicesInfo.meta_api_version}/${metaServicesInfo.meta_phone_id}/messages`
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${metaServicesInfo.meta_token}`
+        },
+        body: JSON.stringify(
+          {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: this.$route.query.phone,
+            type: 'text',
+            text: { // the text object
+              preview_url: false,
+              body: this.operatorTextInput
+            }
+          }
+        )
+      })
+        .then(res => res.json())
+        .then((res) => {
+          console.log(res)
+          if (res.error) {
+            this.$toast.error(res.error.message)
+          }
+        })
     },
     getMetaInfoFromCompany () {
       const company = this.$store.state.company.currentCompany
