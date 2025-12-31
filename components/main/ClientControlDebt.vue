@@ -175,8 +175,8 @@ export default {
       this.loading = false
     },
     calculateServiceNewPlan (indebt, active, service) {
-      if (indebt && active) { return { id: 4 } }
-      if (!indebt && !active) { return { id: 4 } }
+      if (indebt && active) { return { id: 7 } }
+      if (!indebt && !active) { return { id: 7 } }
       if (!indebt && active) { return service.offer.plan }
     },
     isInDebtByPlan (plan) {

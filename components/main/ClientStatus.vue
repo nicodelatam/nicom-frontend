@@ -64,6 +64,7 @@
               Razón de la desconexión: <strong>{{ disconnectReason(clientData.disconnectReason) }}</strong> <br>
               Última MAC conocida: <strong>{{ clientData.lastCallerId }}</strong> <br>
               Última Mikrotik conocida: <strong>{{ clientData.mikrotik }}</strong>
+              Perfil: <strong>{{ clientData.profile }}</strong>
             </v-alert>
             <div v-if="clientData && clientData.online">
               <v-row>
@@ -74,6 +75,7 @@
                   <v-spacer />
                   <h3>En Linea: {{ formatTimeOnline(clientData.uptime) }}</h3>
                   <h3>OLT o Puerto: {{ clientData.service }}</h3>
+                  <h3>Perfil: {{ clientData.profile }}</h3>
                   <v-spacer />
                 </v-col>
                 <v-col>
