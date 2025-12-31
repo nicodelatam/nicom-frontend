@@ -85,8 +85,14 @@
             </div>
           </v-card-text>
           <v-card-text v-else>
-            <v-alert type="error">
-              Error de conexion de la Mikrotik, no se pudo obtener el estado del usuario o el usuario no existe.
+            <v-alert :type="clientData && clientData.errorType === 'not_found' ? 'warning' : 'error'">
+              <template v-if="clientData && clientData.errorType">
+                <strong>{{ getErrorTitle(clientData.errorType) }}</strong><br>
+                {{ clientData.errorMessage }}
+              </template>
+              <template v-else>
+                Error de conexión de la Mikrotik, no se pudo obtener el estado del usuario o el usuario no existe.
+              </template>
             </v-alert>
           </v-card-text>
         </div>
@@ -101,44 +107,6 @@
             Cerrar
           </v-btn>
         </v-card-actions>
-      </v-card>
-      <v-card
-        class="mt-5 rounded-xl"
-      >
-        <v-card-title>
-          <v-icon class="mr-2">mdi-history</v-icon>
-          Eventos recientes de subida y caída del servicio
-        </v-card-title>
-        <v-divider />
-        <div>
-          <v-card-text>
-            <v-data-table
-              :headers="headers"
-              :items="events"
-              no-data-text="No hay eventos recientes"
-              no-results-text="No hay eventos recientes"
-              :items-per-page="5"
-              calculate-widths
-            >
-              <template v-slot:[`item.type`]="props">
-                <v-chip>
-                  <v-icon :color="props.item.type === 'up' ? 'green' : 'red'">{{ props.item.type === 'up' ? 'mdi-arrow-up-bold' : 'mdi-arrow-down-bold' }}</v-icon>
-                  {{ props.item.type === 'up' ? 'Subida' : 'Caída' }}
-                </v-chip>
-              </template>
-              <template v-slot:[`item.createdAt`]="props">
-                <div style="display:flex!important;flex-direction:column;">
-                  <span class="text-caption" style="white-space:nowrap;">
-                    {{ getHour(props.item.createdAt) }}
-                  </span>
-                  <span style="line-height:1rem;" class="text-caption text--secondary">
-                    {{ getDate(props.item.createdAt) }}
-                  </span>
-                </div>
-              </template>
-            </v-data-table>
-          </v-card-text>
-        </div>
       </v-card>
     </v-dialog>
   </span>
@@ -198,6 +166,14 @@ export default {
     }
   },
   methods: {
+    getErrorTitle (errorType) {
+      const titles = {
+        timeout: '⏱️ Tiempo de espera agotado',
+        not_found: '🔍 Usuario no encontrado',
+        connection_error: '🔌 Error de conexión'
+      }
+      return titles[errorType] || 'Error desconocido'
+    },
     async initComponent () {
       this.loading = true
       this.modal = true
@@ -212,8 +188,8 @@ export default {
         .then(res => res.json())
         .then((clientstatus) => {
           this.loading = false
-          if (clientstatus.error === null) {
-            this.clientData = clientstatus.data
+          this.clientData = clientstatus.data
+          if (clientstatus.error === null && clientstatus.data) {
             this.clientData.error = clientstatus.error
             this.searchDeviceByClient(clientstatus.data.mac_address ? clientstatus.data.mac_address : null)
           }

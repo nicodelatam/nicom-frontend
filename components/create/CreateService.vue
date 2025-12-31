@@ -302,6 +302,18 @@
               />
             </v-col>
           </v-row>
+          <v-row>
+            <v-col>
+              <v-switch
+                v-if="Client.offer"
+                v-model="Client.firstmonth"
+                :label="Client.firstmonth ? `Mes adelantado $${formatCurrency(Client.offer.price)}` : 'Mes adelantado'"
+                outlined
+                dense
+                hide-details="auto"
+              />
+            </v-col>
+          </v-row>
           <v-btn
             class="mr-4 mt-4"
             color="primary"
@@ -351,7 +363,8 @@ export default {
         ipmodel: 0,
         stratum: 0,
         affiliation: true,
-        costofdays: null
+        costofdays: null,
+        firstmonth: true
       },
       dir1: '',
       dir2: '',
@@ -658,6 +671,9 @@ export default {
           if (this.Client.costofdays && this.monthfee) {
             this.createInvoiceMovement(service.id, this.Client.costofdays, 'COBRO DIAS DEL MES')
           }
+          if (this.Client.firstmonth) {
+            this.createInvoiceMovement(service.id, this.Client.offer.price, 'PRIMER MES')
+          }
           // this.$simpleTelegramCreate({ client: this.Client, address: this.address, neighborhood: this.Client.neighborhood, operator: this.$store.state.auth.username, telegramBots: this.telegramBots })
           this.$router.push({ path: `/client/${this.clientData.id}?city=${this.selectedCity.name}&clienttype=${this.selectedClienttype.name}` })
           this.isSubmitting = false
@@ -740,7 +756,7 @@ export default {
         type: 'FACTURA',
         offer: 1,
         concept,
-        details: this.getMonthNameByNumber(),
+        details: concept,
         payed: false,
         partial: false,
         indebt: false,

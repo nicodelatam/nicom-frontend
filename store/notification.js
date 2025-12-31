@@ -75,9 +75,9 @@ export const actions = {
     }
 
     const formattedLimitDate = formatLimitDate(payload.limit)
-
+    const url = `${payload.metaServicesInfo.meta_endpoint}/${payload.metaServicesInfo.meta_api_version}/${payload.metaServicesInfo.meta_phone_id}/messages`
     return new Promise((resolve, reject) => {
-      fetch(payload.metaServicesInfo.meta_endpoint, {
+      fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

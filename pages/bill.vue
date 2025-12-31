@@ -25,9 +25,9 @@ export default {
       company: this.$route.query.company,
       token: this.$store.state.auth.token
     })
-    setTimeout(() => {
-      this.printoToPdf() // Uncomment this line to print the bill automatically
-    }, 1000)
+    // setTimeout(() => {
+    //   this.printoToPdf() // Uncomment this line to print the bill automatically
+    // }, 1000)
   },
   methods: {
     printoToPdf () {

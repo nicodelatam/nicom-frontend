@@ -113,7 +113,7 @@ export const actions = {
   },
   getImgByMediaId ({ commit }, payload) {
     return new Promise((resolve, reject) => {
-      fetch(`${this.$config.API_STRAPI_ENDPOINT}getwhatsappmedia?mediaid=${payload.id}`, {
+      fetch(`${this.$config.API_STRAPI_ENDPOINT}getwhatsappmedia?mediaid=${payload.id}&meta_api_version=${payload.meta_api_version}&meta_token=${payload.meta_token}`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${payload.token}`
@@ -126,7 +126,7 @@ export const actions = {
   },
   getAudioByMediaId ({ commit }, payload) {
     return new Promise((resolve, reject) => {
-      fetch(`${this.$config.API_STRAPI_ENDPOINT}getwhatsappmedia?mediaid=${payload.id}`, {
+      fetch(`${this.$config.API_STRAPI_ENDPOINT}getwhatsappmedia?mediaid=${payload.id}&meta_api_version=${payload.meta_api_version}&meta_token=${payload.meta_token}`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${payload.token}`
@@ -180,24 +180,6 @@ export const actions = {
         .then(response => response.json())
         .then((whatsappMessage) => {
           resolve(whatsappMessage)
-        })
-    })
-  },
-  sendMessage ({ commit }, payload) {
-    return new Promise((resolve, reject) => {
-      fetch(`https://graph.facebook.com/v14.0/${payload.phone}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.$config.META_TOKEN}`
-        },
-        body: JSON.stringify(
-          payload.template
-        )
-      })
-        .then(res => res.json())
-        .then((res) => {
-          resolve(res)
         })
     })
   },

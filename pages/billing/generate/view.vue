@@ -318,11 +318,20 @@ export default {
       this.loadingRetry = true
       this.$toast.info(`Iniciando reenvío para ${this.itemsToRetry.length} facturas...`, { duration: 4000 })
 
-      const metaServicesInfo = await this.getMetaServicesConfig() // Reuse from process.vue
-      if (!metaServicesInfo) {
+      if (this.currentCompany.meta_token === null || this.currentCompany.meta_token === undefined) {
         this.loadingRetry = false
-        // Error toast is shown within getMetaServicesConfig
+        this.$toast.error('Error de configuracion. Reportar al webmaster. CODE:COMP_META_INFO_ERROR')
         return
+      }
+      let metaServicesInfo = null
+      metaServicesInfo = {
+        meta_token: this.currentCompany.meta_token,
+        meta_template: this.currentCompany.meta_template,
+        meta_ticket_template: this.currentCompany.meta_ticket_template,
+        meta_endpoint: this.currentCompany.meta_endpoint,
+        meta_WBA_id: this.currentCompany.meta_WBA_id,
+        meta_api_version: this.currentCompany.meta_api_version,
+        meta_phone_id: this.currentCompany.meta_phone_id
       }
 
       let sentCount = 0
@@ -442,7 +451,7 @@ export default {
       }
     },
 
-    // --- Image Generation (Copied/Adapted from process.vue) ---
+    // --- Image Generation (Adapted to show all pending invoices) ---
     // Note: Ensure template /templates/invoice.html is accessible
     async generateImageFromBill (invoice, service) {
       // Simple check for required data
@@ -454,6 +463,19 @@ export default {
 
       try {
         const offer = service.offer // Should be populated
+
+        // Fetch ALL pending invoices for this service
+        const allPendingInvoices = await this.$store.dispatch('billing/getInvoicesByServiceId', {
+          token: this.token,
+          serviceId: service.id,
+          payed: false
+        })
+
+        // If no pending invoices found, use the current invoice as fallback
+        const invoicesToShow = allPendingInvoices && allPendingInvoices.length > 0
+          ? allPendingInvoices
+          : [invoice]
+
         const response = await fetch('/templates/invoice.html') // Check path
         if (!response.ok) { throw new Error(`Template invoice.html not found (${response.status})`) }
         const templateHtml = await response.text()
@@ -476,9 +498,11 @@ export default {
         // Use invoice limit; fallback to today + 15 days if missing?
         const limitDate = invoice.limit ? parseLocalDate(invoice.limit) : new Date(today.setDate(today.getDate() + 15))
 
-        const emissionDateFormatted = this.formatDateLong(new Date()) // Use current date for emission? Or invoice.createdAt?
+        const emissionDateFormatted = this.formatDateLong(new Date()) // Use current date for emission
         const limitDateFormatted = this.formatDateLong(limitDate)
-        const paymentConcept = `Pago Mes ${this.getMonthName(invoice.month)} $${(invoice.value || 0).toLocaleString('es-CO')} pesos`
+
+        // Calculate total balance from all pending invoices
+        const totalBalance = invoicesToShow.reduce((sum, inv) => sum + (inv.balance || 0), 0)
 
         tempContainer = document.createElement('div')
         tempContainer.style.position = 'absolute'
@@ -499,17 +523,15 @@ export default {
           barrioCliente: '#barrio-cliente',
           idUsuario: '#id-usuario',
           celularCliente: '#celular-cliente',
-          emailCliente: '#email-cliente',
-          planContratado: '#plan-contratado',
-          conceptoPago: '#concepto-pago',
-          fechaPago: '#fecha-pago',
           estadoPago: '.pagado',
           totalPendiente: '.total-pendiente',
           emailEmpresa: '#email-empresa',
           fechaEmision: '#fecha-emision',
           fechaLimite: '#fecha-limite',
           logoImg: '.logo img',
-          lineaAtencion: '.contacto div:first-child strong'
+          lineaAtencion: '.contacto div:first-child strong',
+          invoicesList: '#invoices-list',
+          totalPendienteValor: '#total-pendiente-valor'
         }
 
         const populateElement = (selector, value) => {
@@ -518,25 +540,42 @@ export default {
         }
         const company = this.currentCompany || {} // Use current loaded company
 
-        populateElement(selectors.numeroRecibo, invoice.id)
+        populateElement(selectors.numeroRecibo, service.id)
         populateElement(selectors.codigoUsuario, service.code)
         populateElement(selectors.idEmpresa, company.nit)
         populateElement(selectors.direccionSucursal, company.address)
         populateElement(selectors.nombreCliente, service.client_name)
         populateElement(selectors.documentoCliente, service.dni)
         populateElement(selectors.servicioCliente, offer.name)
-        populateElement(selectors.planContratado, offer.name)
         populateElement(selectors.direccionCliente, service.address)
         populateElement(selectors.barrioCliente, service.neighborhood)
         populateElement(selectors.idUsuario, `CÓDIGO: ${service.code}`)
         populateElement(selectors.celularCliente, service.phone)
-        populateElement(selectors.emailCliente, service.email)
-        populateElement(selectors.conceptoPago, paymentConcept)
-        populateElement(selectors.fechaPago, new Date().toLocaleString('es-ES')) // Current time for generation?
         populateElement(selectors.emailEmpresa, company.email)
         populateElement(selectors.fechaEmision, emissionDateFormatted)
         populateElement(selectors.fechaLimite, limitDateFormatted)
-        populateElement(selectors.totalPendiente, `TOTAL PENDIENTE POR PAGAR: $${(invoice.balance || 0).toLocaleString('es-CO')} pesos`)
+        populateElement(selectors.totalPendiente, `TOTAL PENDIENTE POR PAGAR: $${totalBalance.toLocaleString('es-CO')} pesos`)
+        populateElement(selectors.totalPendienteValor, `$${totalBalance.toLocaleString('es-CO')}`)
+
+        // Populate the invoices table
+        const invoicesListEl = tempContainer.querySelector(selectors.invoicesList)
+        if (invoicesListEl) {
+          // Clear default/placeholder rows
+          invoicesListEl.innerHTML = ''
+
+          // Add a row for each pending invoice
+          for (const inv of invoicesToShow) {
+            const row = document.createElement('tr')
+            row.className = 'invoice-row-pending'
+            row.innerHTML = `
+              <td>${this.getMonthName(inv.month)}</td>
+              <td>${inv.year}</td>
+              <td>${inv.details || inv.concept || 'Pago Mensualidad'}</td>
+              <td>$${(inv.balance || 0).toLocaleString('es-CO')}</td>
+            `
+            invoicesListEl.appendChild(row)
+          }
+        }
 
         // Logo
         const logoImgEl = tempContainer.querySelector(selectors.logoImg)
@@ -550,13 +589,12 @@ export default {
         if (lineaAtencionEl?.parentNode) {
           lineaAtencionEl.parentNode.innerHTML = `<strong>LÍNEA DE ATENCIÓN:</strong> ${company.phone || 'N/A'}`
         }
-        // Estado Pago
+        // Estado Pago - always PENDIENTE for pending invoices
         const estadoPagoEl = tempContainer.querySelector(selectors.estadoPago)
         if (estadoPagoEl) {
-          const estadoTexto = invoice.payed ? 'PAGADO' : (invoice.partial ? 'ABONADO' : 'PENDIENTE')
-          estadoPagoEl.textContent = estadoTexto
-          estadoPagoEl.style.borderColor = invoice.payed ? '#4CAF50' : (invoice.partial ? '#FFC107' : '#FF0000')
-          estadoPagoEl.style.color = invoice.payed ? '#4CAF50' : (invoice.partial ? '#FFC107' : '#FF0000')
+          estadoPagoEl.textContent = 'PENDIENTE'
+          estadoPagoEl.style.borderColor = '#FF0000'
+          estadoPagoEl.style.color = '#FF0000'
         }
 
         // --- Render to Canvas ---
@@ -568,9 +606,10 @@ export default {
           img.complete ? Promise.resolve() : new Promise((resolve) => { img.onload = img.onerror = resolve })
         ))
 
-        const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false })
+        // Increased scale from 2 to 3 for better resolution
+        const canvas = await html2canvas(element, { scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false })
         const imgData = canvas.toDataURL('image/jpeg', 0.95)
-        const fileName = `recibo-${service.code}-${invoice.month}-${invoice.year}.jpg`
+        const fileName = `estado-cuenta-${service.code}-${invoice.month}-${invoice.year}.jpg`
 
         // Upload
         return await this.uploadInvoiceImage(imgData, invoice.id, fileName)
